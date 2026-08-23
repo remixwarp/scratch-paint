@@ -14,17 +14,18 @@ const FillVertGradientEnabled = props => (
         <defs>
             <linearGradient
                 x1="50%"
-                y1="100%"
+                y1="0%"
                 x2="50%"
-                y2="3.061617e-15%"
-                id="linearGradient-1"
+                y2="100%"
+                id="linearGradient-vert"
             >
                 <stop
-                    stopColor="#FFFFFF"
+                    stopColor="currentColor"
+                    style={{color: 'var(--paint-looks-secondary-default, #FF8C1A)'}}
                     offset="0%"
                 />
                 <stop
-                    stopColor="#00c3ff"
+                    stopColor="#FFFFFF"
                     offset="100%"
                 />
             </linearGradient>
@@ -40,7 +41,7 @@ const FillVertGradientEnabled = props => (
             <rect
                 id="Vertical"
                 stroke="#000000"
-                fill="url(#linearGradient-1)"
+                fill="url(#linearGradient-vert)"
                 x="0.5"
                 y="0.5"
                 width="19"

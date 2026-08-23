@@ -102,7 +102,7 @@ const CopyPasteHOC = function (WrappedComponent) {
 
             let items = [];
             for (let i = 0; i < this.props.clipboardItems.length; i++) {
-                const item = paper.Base.importJSON(this.props.clipboardItems[i]);
+                const item = paper.Base.importJSON(this.props.clipboardItems[i], {insert: false});
                 if (item) {
                     items.push(item);
                 }

@@ -231,6 +231,30 @@ class PaperCanvas extends React.Component {
             }
         }
 
+        // Paper.js ignores x and y attributes on <text> elements. To fix text positioning,
+        // merge x/y into the transform attribute before passing to Paper.js.
+        const textElements = svgDom.querySelectorAll('text');
+        for (const textEl of textElements) {
+            const x = textEl.getAttribute('x');
+            const y = textEl.getAttribute('y');
+            if (x !== null || y !== null) {
+                const existingTransform = textEl.getAttribute('transform') || '';
+                const tx = x !== null ? parseFloat(x) : 0;
+                let ty = y !== null ? parseFloat(y) : 0;
+                // Paper.js internally translates single-line text down by a leading of
+                // 12 * 1.2 = 14.4 (the default font-size before it is set). Compensate so
+                // text doesn't end up shifted too low.
+                if (textEl.childElementCount === 0) {
+                    ty -= 14.4;
+                }
+                textEl.setAttribute('transform',
+                    `translate(${tx}, ${ty}) ${existingTransform}`.trim());
+                if (x !== null) textEl.removeAttribute('x');
+                if (y !== null) textEl.removeAttribute('y');
+            }
+        }
+        svg = new XMLSerializer().serializeToString(svgDom);
+
         paper.project.importSVG(svg, {
             expandShapes: true,
             insert: false,
@@ -258,8 +282,6 @@ class PaperCanvas extends React.Component {
         this.clearPaperCanvas();
 
         if (this.queuedImport) this.queuedImport = null;
-        const itemWidth = item.bounds.width;
-        const itemHeight = item.bounds.height;
 
         // Get reference to viewbox
         let mask;
@@ -300,8 +322,8 @@ class PaperCanvas extends React.Component {
             }
             item.translate(CENTER.subtract(rotationPoint.multiply(2)));
         } else {
-            // Center
-            item.translate(CENTER.subtract(itemWidth, itemHeight));
+            // Center the item using the scaled bounds
+            item.translate(CENTER.subtract(item.bounds.center));
         }
 
         paper.project.activeLayer.insertChild(0, item);

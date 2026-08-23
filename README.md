@@ -1,6 +1,6 @@
-# MistWarp/scratch-paint
+# Bilup/scratch-paint
 
-Modified version of scratch-paint from Turbowarp and PenguinMod for use in MistWarp.
+Modified version of scratch-paint from MistWarp for use in Bilup.
 Uses @turbowarp/paper as it includes some nice fixes.
 
 ## License

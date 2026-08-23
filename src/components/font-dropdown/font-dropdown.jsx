@@ -200,7 +200,7 @@ const ModeToolsComponent = props => (
                         getFontName={props.getFontName}
                     />
                 </Button>
-                {props.customFonts.map(font => (
+                {(props.customFonts || []).map(font => (
                     <CustomFontButton
                         key={font.name}
                         font={font.family}
