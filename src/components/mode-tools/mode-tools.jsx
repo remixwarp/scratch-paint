@@ -1178,17 +1178,6 @@ const ModeToolsComponent = props => {
         const limitRadius = props.polyRoundLimitRadius;
         const collapse = props.polyRoundCollapse;
         const rawPoints = props.polyRoundRawPoints || [];
-        const cornerLabel = props.intl.formatMessage(messages.polyRoundCornerStyle);
-        const radiusLabel = props.intl.formatMessage(messages.polyRoundRadius);
-        const styleArc = props.intl.formatMessage(messages.polyRoundStyleArc);
-        const styleBezier = props.intl.formatMessage(messages.polyRoundStyleBezier);
-        const limitLabel = props.intl.formatMessage(messages.polyRoundLimitRadius);
-        const hint = props.intl.formatMessage(messages.polyRoundHint);
-        const ptsLabel = props.intl.formatMessage(messages.polyRoundPoints);
-        const addLabel = props.intl.formatMessage(messages.polyRoundAddPoint);
-        const clearLabel = props.intl.formatMessage(messages.polyRoundClear);
-        const doneLabel = props.intl.formatMessage(messages.polyRoundDone);
-        const collapseLabel = props.intl.formatMessage(messages.polyRoundCollapse);
 
         const pointLimit = 2;
         const autoCollapse = collapse || rawPoints.length > pointLimit;
@@ -1208,10 +1197,10 @@ const ModeToolsComponent = props => {
 
         return (
             <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'8px'}}>
-                <div title={radiusLabel}>
+                <div title="Corner Radius">
                     <img
-                        alt={radiusLabel}
-                        title={radiusLabel}
+                        alt="Corner Radius"
+                        title="Corner Radius"
                         className={styles.modeToolsIcon}
                         draggable={false}
                         src={roundedRectIcon}
@@ -1226,32 +1215,32 @@ const ModeToolsComponent = props => {
                     value={currentRadius}
                     onSubmit={props.onPolyRoundRadiusChange}
                 />
-                <label title={cornerLabel} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
-                    <span>{cornerLabel}</span>
+                <label title="Corner Style" style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                    <span>"Corner Style"</span>
                     <select
                         value={cornerStyle}
                         onChange={e => props.onPolyRoundCornerStyleChange(e.target.value)}
                         style={{fontSize:'12px', padding:'1px 2px'}}
                     >
-                        <option value="arc">{styleArc}</option>
-                        <option value="bezier">{styleBezier}</option>
+                        <option value="arc">"Arc"</option>
+                        <option value="bezier">"Bezier"</option>
                     </select>
                 </label>
-                <label title={limitLabel} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                <label title="Consistent Radius" style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <input
                         type="checkbox"
                         checked={!!limitRadius}
                         onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)}
                     />
-                    <span>{limitLabel}</span>
+                    <span>"Consistent Radius"</span>
                 </label>
 
                 <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
-                    {hint}
+                    "Click on the canvas to add points. Finish with double-click, Enter, or Finish."
                 </span>
 
                 <div
-                    title={ptsLabel}
+                    title="Points"
                     style={{
                         border:'1px solid #ccc',
                         borderRadius:'4px',
@@ -1263,26 +1252,26 @@ const ModeToolsComponent = props => {
                     }}
                 >
                     <div style={{display:'flex', gap:'4px', alignItems:'center', justifyContent:'space-between', fontSize:'12px'}}>
-                        <span>{ptsLabel} ({rawPoints.length})</span>
+                        <span>"Points" ({rawPoints.length})</span>
                         <span style={{display:'inline-flex', gap:'2px'}}>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundToggleCollapse}
-                                title={collapseLabel}
+                                title="Collapse / Expand"
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >{autoCollapse ? '+' : '-'}</button>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundAddPoint}
-                                title={addLabel}
+                                title="Add Point"
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >+</button>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundClear}
-                                title={clearLabel}
+                                title="Clear"
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
-                            >{clearLabel}</button>
+                            >"Clear"</button>
                         </span>
                     </div>
                     {!autoCollapse && rawPoints.map(pointRow)}
@@ -1292,9 +1281,9 @@ const ModeToolsComponent = props => {
                     <button
                         type="button"
                         onClick={props.onPolyRoundFinish}
-                        title={doneLabel}
+                        title="Finish"
                         style={{fontSize:'12px', padding:'2px 8px'}}
-                    >{doneLabel}</button>
+                    >"Finish"</button>
                 )}
             </div>
         );
