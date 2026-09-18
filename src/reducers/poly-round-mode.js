@@ -6,13 +6,17 @@ const CHANGE_POLY_ROUND_LIMIT_RADIUS = 'scratch-paint/poly-round-mode/CHANGE_LIM
 const TOGGLE_POLY_ROUND_COLLAPSE = 'scratch-paint/poly-round-mode/TOGGLE_COLLAPSE';
 const SET_POLY_ROUND_POINTS = 'scratch-paint/poly-round-mode/SET_POINTS';
 const TRIGGER_POLY_ROUND_ACTION = 'scratch-paint/poly-round-mode/TRIGGER_ACTION';
+const CONSUME_POLY_ROUND_ACTION = 'scratch-paint/poly-round-mode/CONSUME_ACTION';
+
+let actionCounter = 0;
 
 const initialState = {
     radius: 20,
     cornerStyle: 'arc',
     limitRadius: false,
     collapsePoints: false,
-    rawPoints: []
+    rawPoints: [],
+    pendingAction: null    // {token, name} — consumed once, then cleared
 };
 
 const reducer = function (state, action) {
@@ -37,8 +41,16 @@ const reducer = function (state, action) {
     case SET_POLY_ROUND_POINTS:
         return Object.assign({}, state, {rawPoints: Array.isArray(action.points) ? action.points.slice() : []});
     case TRIGGER_POLY_ROUND_ACTION:
-        // Stash the requested action for the tool container to pick up
-        return Object.assign({}, state, {pendingAction: action.name});
+        // Stash with a unique token so repeated clicks of the same button
+        // still produce a fresh prop change that the container sees.
+        actionCounter += 1;
+        return Object.assign({}, state, {
+            pendingAction: {token: actionCounter, name: action.name}
+        });
+    case CONSUME_POLY_ROUND_ACTION:
+        // Cleared by the container right after handling, so stale values
+        // don't get replayed on the next tool activation.
+        return Object.assign({}, state, {pendingAction: null});
     default:
         return state;
     }
@@ -62,6 +74,9 @@ const setPolyRoundPoints = function (points) {
 const triggerPolyRoundAction = function (name) {
     return {type: TRIGGER_POLY_ROUND_ACTION, name}; // 'clear' | 'addMid' | 'finish'
 };
+const consumePolyRoundAction = function () {
+    return {type: CONSUME_POLY_ROUND_ACTION};
+};
 
 export {
     reducer as default,
@@ -70,5 +85,6 @@ export {
     changePolyRoundLimitRadius,
     togglePolyRoundCollapse,
     setPolyRoundPoints,
-    triggerPolyRoundAction
+    triggerPolyRoundAction,
+    consumePolyRoundAction
 };

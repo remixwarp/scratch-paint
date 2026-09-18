@@ -18,7 +18,8 @@ import {
     changePolyRoundCornerStyle,
     changePolyRoundLimitRadius,
     setPolyRoundPoints,
-    triggerPolyRoundAction
+    triggerPolyRoundAction,
+    consumePolyRoundAction
 } from '../reducers/poly-round-mode';
 
 import {clearSelection, getSelectedLeafItems} from '../helper/selection';
@@ -60,17 +61,24 @@ class PolyRoundMode extends React.Component {
 
             // Handle dispatched toolbar actions
             const pending = nextProps.pendingAction;
-            if (pending && pending !== this.props.pendingAction) {
-                if (pending === 'clear') this.tool.clear();
-                else if (pending === 'addMid') {
+            const prevPending = this.props.pendingAction;
+            const tokenChanged = !!(pending && (!prevPending || pending.token !== prevPending.token));
+            if (pending && tokenChanged) {
+                const name = pending.name;
+                if (name === 'clear') this.tool.clear();
+                else if (name === 'addMid') {
                     const pts = this.tool.getRawPoints();
                     if (pts.length) {
                         const last = pts[pts.length - 1];
                         const prev = pts[pts.length - 2] || last;
                         this.tool.addPointAt(prev.add(last).divide(2));
                     }
-                } else if (pending === 'finish') {
+                } else if (name === 'finish') {
                     this.tool.finish();
+                }
+                // Acknowledge so stale values don't replay
+                if (typeof this.props.onConsumeAction === 'function') {
+                    this.props.onConsumeAction();
                 }
             }
         }
@@ -195,7 +203,8 @@ PolyRoundMode.propTypes = {
     onChangeLimitRadius: PropTypes.func.isRequired,
     onSyncPoints: PropTypes.func.isRequired,
     onUpdateImage: PropTypes.func.isRequired,
-    pendingAction: PropTypes.string,
+    pendingAction: PropTypes.shape({token: PropTypes.number, name: PropTypes.string}),
+    onConsumeAction: PropTypes.func,
     radius: PropTypes.number.isRequired,
     selectedItems: PropTypes.arrayOf(PropTypes.instanceOf(paper.Item)),
     setCursor: PropTypes.func.isRequired,
@@ -247,6 +256,9 @@ const mapDispatchToProps = dispatch => ({
     },
     onSyncPoints: points => {
         dispatch(setPolyRoundPoints(points));
+    },
+    onConsumeAction: () => {
+        dispatch(consumePolyRoundAction());
     }
 });
 
