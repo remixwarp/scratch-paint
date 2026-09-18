@@ -1278,14 +1278,14 @@ const ModeToolsComponent = props => {
                     onSubmit={props.onPolyRoundRadiusChange}
                 />
                 <label title={props.intl.formatMessage(messages.polyRoundCornerStyle)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
-                    <span>props.intl.formatMessage(messages.polyRoundCornerStyle)</span>
+                    <span>{props.intl.formatMessage(messages.polyRoundCornerStyle)}</span>
                     <select
                         value={cornerStyle}
                         onChange={e => props.onPolyRoundCornerStyleChange(e.target.value)}
                         style={{fontSize:'12px', padding:'1px 2px'}}
                     >
-                        <option value="arc">props.intl.formatMessage(messages.polyRoundStyleArc)</option>
-                        <option value="bezier">props.intl.formatMessage(messages.polyRoundStyleBezier)</option>
+                        <option value="arc">{props.intl.formatMessage(messages.polyRoundStyleArc)}</option>
+                        <option value="bezier">{props.intl.formatMessage(messages.polyRoundStyleBezier)}</option>
                     </select>
                 </label>
                 <label title={props.intl.formatMessage(messages.polyRoundLimitRadius)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
@@ -1294,7 +1294,7 @@ const ModeToolsComponent = props => {
                         checked={!!limitRadius}
                         onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)}
                     />
-                    <span>props.intl.formatMessage(messages.polyRoundLimitRadius)</span>
+                    <span>{props.intl.formatMessage(messages.polyRoundLimitRadius)}</span>
                 </label>
 
                 <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
@@ -1314,7 +1314,7 @@ const ModeToolsComponent = props => {
                     }}
                 >
                     <div style={{display:'flex', gap:'4px', alignItems:'center', justifyContent:'space-between', fontSize:'12px'}}>
-                        <span>props.intl.formatMessage(messages.polyRoundPoints) ({rawPoints.length})</span>
+                        <span>{props.intl.formatMessage(messages.polyRoundPoints)} ({rawPoints.length})</span>
                         <span style={{display:'inline-flex', gap:'2px'}}>
                             <button
                                 type="button"
@@ -1333,7 +1333,7 @@ const ModeToolsComponent = props => {
                                 onClick={props.onPolyRoundClear}
                                 title={props.intl.formatMessage(messages.polyRoundClear)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
-                            >props.intl.formatMessage(messages.polyRoundClear)</button>
+                            >{props.intl.formatMessage(messages.polyRoundClear)}</button>
                         </span>
                     </div>
                     {!autoCollapse && rawPoints.map(pointRow)}
@@ -1345,7 +1345,7 @@ const ModeToolsComponent = props => {
                         onClick={props.onPolyRoundFinish}
                         title={props.intl.formatMessage(messages.polyRoundDone)}
                         style={{fontSize:'12px', padding:'2px 8px'}}
-                    >props.intl.formatMessage(messages.polyRoundDone)</button>
+                    >{props.intl.formatMessage(messages.polyRoundDone)}</button>
                 )}
             </div>
         );

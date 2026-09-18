@@ -180,6 +180,31 @@ class PolyRoundTool extends paper.Tool {
         this._regeneratePreview();
     }
 
+    /**
+     * Called by the container whenever scratch-paint's Redux state for the
+     * current selection changes. Used to keep the selection bounding box
+     * aligned with what the rest of the paint editor sees.
+     */
+    onSelectionChanged (selectedItems) {
+        if (this.boundingBoxTool) {
+            this.boundingBoxTool.onSelectionChanged(selectedItems);
+        }
+    }
+
+    /**
+     * Return hit-test options used by the boundingBoxTool / container when
+     * deciding whether to route a mouse event to the selection handler.
+     */
+    getHitOptions () {
+        return {
+            segments: true,
+            strokes: true,
+            handles: true,
+            fill: true,
+            tolerance: PolyRoundTool.TOLERANCE
+        };
+    }
+
     getRawPoints () {
         return this._rawPoints.slice();
     }
