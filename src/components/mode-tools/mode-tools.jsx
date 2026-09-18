@@ -1278,31 +1278,28 @@ const ModeToolsComponent = props => {
             <div
                 key={idx}
                 style={{
-                    display:'flex', gap:'4px', alignItems:'center',
-                    fontSize:'11px', lineHeight:'20px', fontFamily:'monospace',
-                    border:'1px solid #ddd', borderRadius:'3px', padding:'2px 4px',
-                    background:'#fafafa',
-                    minWidth:'148px', maxWidth:'160px', flex:'0 0 auto'
+                    display:'flex', gap:'3px', alignItems:'center',
+                    fontSize:'11px', lineHeight:'18px', fontFamily:'monospace',
+                    border:'1px solid #ddd', borderRadius:'3px', padding:'2px 3px',
+                    background:'#fafafa'
                 }}
             >
-                <span style={{minWidth:'18px', color:'#888', textAlign:'center'}}>{idx+1}</span>
+                <span style={{minWidth:'16px', color:'#888', textAlign:'center'}}>{idx+1}</span>
                 <span>x</span>
                 <input
-                    type="number"
-                    step="0.1"
+                    type="number" step="0.1"
                     value={Number(pt.x.toFixed(1))}
                     onBlur={e => props.onPolyRoundSetPoint(idx, Number(e.target.value) || 0, pt.y)}
                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
+                    style={{width:'48px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
                 />
                 <span>y</span>
                 <input
-                    type="number"
-                    step="0.1"
+                    type="number" step="0.1"
                     value={Number(pt.y.toFixed(1))}
                     onBlur={e => props.onPolyRoundSetPoint(idx, pt.x, Number(e.target.value) || 0)}
                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
+                    style={{width:'48px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
                 />
                 <button
                     type="button"
@@ -1314,7 +1311,7 @@ const ModeToolsComponent = props => {
         );
 
         return (
-            <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'6px 10px', alignItems:'center'}}>
+            <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'6px 10px', alignItems:'flex-start'}}>
                 <div title={props.intl.formatMessage(messages.polyRoundRadius)}>
                     <img
                         alt={props.intl.formatMessage(messages.polyRoundRadius)}
@@ -1325,81 +1322,63 @@ const ModeToolsComponent = props => {
                     />
                 </div>
                 <LiveInput
-                    range
-                    small
-                    min={0}
-                    max={1000}
-                    type="number"
+                    range small min={0} max={1000} type="number"
                     value={currentRadius}
                     onSubmit={props.onPolyRoundRadiusChange}
                 />
                 <label title={props.intl.formatMessage(messages.polyRoundCornerStyle)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <span>{props.intl.formatMessage(messages.polyRoundCornerStyle)}</span>
-                    <select
-                        value={cornerStyle}
+                    <select value={cornerStyle}
                         onChange={e => props.onPolyRoundCornerStyleChange(e.target.value)}
-                        style={{fontSize:'12px', padding:'1px 2px'}}
-                    >
+                        style={{fontSize:'12px', padding:'1px 2px'}}>
                         <option value="arc">{props.intl.formatMessage(messages.polyRoundStyleArc)}</option>
                         <option value="bezier">{props.intl.formatMessage(messages.polyRoundStyleBezier)}</option>
                     </select>
                 </label>
                 <label title={props.intl.formatMessage(messages.polyRoundLimitRadius)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
-                    <input
-                        type="checkbox"
-                        checked={!!limitRadius}
-                        onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)}
-                    />
+                    <input type="checkbox" checked={!!limitRadius}
+                        onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)} />
                     <span>{props.intl.formatMessage(messages.polyRoundLimitRadius)}</span>
                 </label>
                 <label title={props.intl.formatMessage(messages.polyRoundShowItems)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <span>{props.intl.formatMessage(messages.polyRoundShowItems)}</span>
-                    <select
-                        value={showItems}
+                    <select value={showItems}
                         onChange={e => props.onPolyRoundShowItemsChange(e.target.value)}
-                        style={{fontSize:'12px', padding:'1px 2px'}}
-                    >
+                        style={{fontSize:'12px', padding:'1px 2px'}}>
                         <option value="both">{props.intl.formatMessage(messages.polyRoundShowBoth)}</option>
                         <option value="markers">{props.intl.formatMessage(messages.polyRoundShowMarkers)}</option>
                         <option value="guide">{props.intl.formatMessage(messages.polyRoundShowGuide)}</option>
                         <option value="none">{props.intl.formatMessage(messages.polyRoundShowNone)}</option>
                     </select>
                 </label>
-
                 <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
                     {props.intl.formatMessage(messages.polyRoundHint)}
                 </span>
 
-                {/* Coordinate-card row — takes full width so cards wrap cleanly */}
+                {/* Vertex coordinate card — INLINE, not forced to full width */}
                 <div
                     title={props.intl.formatMessage(messages.polyRoundPoints)}
                     style={{
-                        flex:'1 0 100%',
-                        border:'1px solid #ccc',
-                        borderRadius:'4px',
-                        padding:'4px 6px',
+                        border:'1px solid #ccc', borderRadius:'4px', padding:'4px 6px',
+                        minWidth:'340px', maxWidth:'460px',
                         maxHeight: autoCollapse ? '26px' : '260px',
-                        overflow:'auto',
-                        transition:'max-height 0.15s ease'
+                        overflow:'auto', transition:'max-height 0.15s ease'
                     }}
                 >
                     <div style={{display:'flex', gap:'4px', alignItems:'center', justifyContent:'space-between', fontSize:'12px'}}>
                         <span>{props.intl.formatMessage(messages.polyRoundPoints)} ({rawPoints.length})</span>
                         <span style={{display:'inline-flex', gap:'2px'}}>
-                            <button
-                                type="button"
+                            <button type="button"
                                 onClick={props.onPolyRoundToggleCollapse}
                                 title={props.intl.formatMessage(messages.polyRoundCollapse)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >{autoCollapse ? '+' : '-'}</button>
-                            <button
-                                type="button"
+                            <button type="button"
                                 onClick={props.onPolyRoundAddPoint}
                                 title={props.intl.formatMessage(messages.polyRoundAddPoint)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >+</button>
-                            <button
-                                type="button"
+                            <button type="button"
                                 onClick={props.onPolyRoundClear}
                                 title={props.intl.formatMessage(messages.polyRoundClear)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
@@ -1407,15 +1386,19 @@ const ModeToolsComponent = props => {
                         </span>
                     </div>
                     {!autoCollapse && (
-                        <div style={{display:'flex', flexWrap:'wrap', gap:'4px', marginTop:'4px'}}>
+                        <div style={{
+                            marginTop:'4px',
+                            display:'grid',
+                            gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))',
+                            gap:'4px'
+                        }}>
                             {rawPoints.map(pointCard)}
                         </div>
                     )}
                 </div>
 
                 {rawPoints.length >= 2 && (
-                    <button
-                        type="button"
+                    <button type="button"
                         onClick={props.onPolyRoundFinish}
                         title={props.intl.formatMessage(messages.polyRoundDone)}
                         style={{fontSize:'12px', padding:'2px 8px'}}

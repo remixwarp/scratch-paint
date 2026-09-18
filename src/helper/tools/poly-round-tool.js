@@ -57,7 +57,10 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
         angle = (angle + 2 * Math.PI) % (2 * Math.PI);
         // paper.Path.arcTo(through, to, radius, clockwise, largeArc)
         // clockwise = true means sweep from through→to goes clockwise
-        const clockwise = angle <= Math.PI;
+        // SVG sweep (screen-coord CW) vs paper clockwise (math-coord CW) are opposites:
+        // PolyGoneRound uses sweep = angle>PI ? 0 : 1 (1=screen CW)
+        // paper clockwise=true = math CW = screen CCW → flip: paper_clockwise = (svg_sweep===0)
+        const clockwise = angle > Math.PI;
 
         let l = radius / Math.abs(Math.tan(angle / 2 || 1e-9));
         let r = radius;
