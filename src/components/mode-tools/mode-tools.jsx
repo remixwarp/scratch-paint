@@ -297,7 +297,7 @@ const ModeToolsComponent = props => {
             id: 'paint.modeTools.polyRoundCollapse'
         },
         polyRoundHint: {
-            defaultMessage: '在画板上点击放置顶点；双击、回车或点"完成"生成圆角多边形。',
+            defaultMessage: '在画板上点击放置顶点；拖动端点可调整位置；双击、回车或点"完成"生成圆角多边形。',
             description: 'User-facing hint explaining how to use the rounded polygon tool',
             id: 'paint.modeTools.polyRoundHint'
         },
@@ -1281,7 +1281,8 @@ const ModeToolsComponent = props => {
                     display:'flex', gap:'4px', alignItems:'center',
                     fontSize:'11px', lineHeight:'20px', fontFamily:'monospace',
                     border:'1px solid #ddd', borderRadius:'3px', padding:'2px 4px',
-                    background:'#fafafa', minWidth:'140px'
+                    background:'#fafafa',
+                    minWidth:'148px', maxWidth:'160px', flex:'0 0 auto'
                 }}
             >
                 <span style={{minWidth:'18px', color:'#888', textAlign:'center'}}>{idx+1}</span>
@@ -1292,7 +1293,7 @@ const ModeToolsComponent = props => {
                     value={Number(pt.x.toFixed(1))}
                     onBlur={e => props.onPolyRoundSetPoint(idx, Number(e.target.value) || 0, pt.y)}
                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace'}}
+                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
                 />
                 <span>y</span>
                 <input
@@ -1301,7 +1302,7 @@ const ModeToolsComponent = props => {
                     value={Number(pt.y.toFixed(1))}
                     onBlur={e => props.onPolyRoundSetPoint(idx, pt.x, Number(e.target.value) || 0)}
                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace'}}
+                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
                 />
                 <button
                     type="button"
@@ -1313,7 +1314,7 @@ const ModeToolsComponent = props => {
         );
 
         return (
-            <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'8px'}}>
+            <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'6px 10px', alignItems:'center'}}>
                 <div title={props.intl.formatMessage(messages.polyRoundRadius)}>
                     <img
                         alt={props.intl.formatMessage(messages.polyRoundRadius)}
@@ -1369,9 +1370,11 @@ const ModeToolsComponent = props => {
                     {props.intl.formatMessage(messages.polyRoundHint)}
                 </span>
 
+                {/* Coordinate-card row — takes full width so cards wrap cleanly */}
                 <div
                     title={props.intl.formatMessage(messages.polyRoundPoints)}
                     style={{
+                        flex:'1 0 100%',
                         border:'1px solid #ccc',
                         borderRadius:'4px',
                         padding:'4px 6px',
