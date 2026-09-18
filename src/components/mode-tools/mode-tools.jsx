@@ -1259,10 +1259,10 @@ const ModeToolsComponent = props => {
 
         return (
             <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'8px'}}>
-                <div title=props.intl.formatMessage(messages.polyRoundRadius)>
+                <div title={props.intl.formatMessage(messages.polyRoundRadius)}>
                     <img
-                        alt=props.intl.formatMessage(messages.polyRoundRadius)
-                        title=props.intl.formatMessage(messages.polyRoundRadius)
+                        alt={props.intl.formatMessage(messages.polyRoundRadius)}
+                        title={props.intl.formatMessage(messages.polyRoundRadius)}
                         className={styles.modeToolsIcon}
                         draggable={false}
                         src={roundedRectIcon}
@@ -1277,7 +1277,7 @@ const ModeToolsComponent = props => {
                     value={currentRadius}
                     onSubmit={props.onPolyRoundRadiusChange}
                 />
-                <label title=props.intl.formatMessage(messages.polyRoundCornerStyle) style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                <label title={props.intl.formatMessage(messages.polyRoundCornerStyle)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <span>props.intl.formatMessage(messages.polyRoundCornerStyle)</span>
                     <select
                         value={cornerStyle}
@@ -1288,7 +1288,7 @@ const ModeToolsComponent = props => {
                         <option value="bezier">props.intl.formatMessage(messages.polyRoundStyleBezier)</option>
                     </select>
                 </label>
-                <label title=props.intl.formatMessage(messages.polyRoundLimitRadius) style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                <label title={props.intl.formatMessage(messages.polyRoundLimitRadius)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <input
                         type="checkbox"
                         checked={!!limitRadius}
@@ -1302,7 +1302,7 @@ const ModeToolsComponent = props => {
                 </span>
 
                 <div
-                    title=props.intl.formatMessage(messages.polyRoundPoints)
+                    title={props.intl.formatMessage(messages.polyRoundPoints)}
                     style={{
                         border:'1px solid #ccc',
                         borderRadius:'4px',
@@ -1319,19 +1319,19 @@ const ModeToolsComponent = props => {
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundToggleCollapse}
-                                title=props.intl.formatMessage(messages.polyRoundCollapse)
+                                title={props.intl.formatMessage(messages.polyRoundCollapse)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >{autoCollapse ? '+' : '-'}</button>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundAddPoint}
-                                title=props.intl.formatMessage(messages.polyRoundAddPoint)
+                                title={props.intl.formatMessage(messages.polyRoundAddPoint)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >+</button>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundClear}
-                                title=props.intl.formatMessage(messages.polyRoundClear)
+                                title={props.intl.formatMessage(messages.polyRoundClear)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >props.intl.formatMessage(messages.polyRoundClear)</button>
                         </span>
@@ -1343,7 +1343,7 @@ const ModeToolsComponent = props => {
                     <button
                         type="button"
                         onClick={props.onPolyRoundFinish}
-                        title=props.intl.formatMessage(messages.polyRoundDone)
+                        title={props.intl.formatMessage(messages.polyRoundDone)}
                         style={{fontSize:'12px', padding:'2px 8px'}}
                     >props.intl.formatMessage(messages.polyRoundDone)</button>
                 )}
