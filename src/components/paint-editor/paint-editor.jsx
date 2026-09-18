@@ -34,6 +34,7 @@ import RoundedRectMode from '../../containers/rounded-rect-mode.jsx';
 import SussyMode from '../../containers/sussy-mode.jsx';
 import TriangleMode from '../../containers/triangle-mode.jsx';
 import ArrowMode from '../../containers/arrow-mode.jsx';
+import PolyRoundMode from '../../containers/poly-round-mode.jsx';
 import ReshapeMode from '../../containers/reshape-mode.jsx';
 import SelectMode from '../../containers/select-mode.jsx';
 import StrokeColorIndicatorComponent from '../../containers/stroke-color-indicator.jsx';
@@ -187,6 +188,9 @@ const PaintEditorComponent = props => (
                         onUpdateImage={props.onUpdateImage}
                     />
                     <ArrowMode
+                        onUpdateImage={props.onUpdateImage}
+                    />
+                    <PolyRoundMode
                         onUpdateImage={props.onUpdateImage}
                     />
                 </div>

@@ -12,11 +12,13 @@ const vectorModesObj = {
     RECT: null,
     ROUNDED_RECT: null,
     TEXT: null,
-    
+
     SUSSY: null,
     TRIANGLE: null,
 
-    ARROW: null
+    ARROW: null,
+
+    POLY_ROUND: null
 };
 const bitmapModesObj = {
     BIT_BRUSH: null,
@@ -50,8 +52,10 @@ const GradientToolsModes = keyMirror({
 
     SUSSY: null,
     TRIANGLE: null,
-    
-    ARROW: null
+
+    ARROW: null,
+
+    POLY_ROUND: null
 });
 
 export {

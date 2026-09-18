@@ -9,6 +9,7 @@ import rectModeReducer from './rect-mode';
 import roundedRectModeReducer from './rounded-rect-mode';
 import triangleModeReducer from './triangle-mode';
 import sussyModeReducer from './sussy-mode';
+import polyRoundModeReducer from './poly-round-mode';
 import colorReducer from './color';
 import clipboardReducer from './clipboard';
 import cursorReducer from './cursor';
@@ -44,6 +45,7 @@ export default combineReducers({
     roundedRectMode: roundedRectModeReducer,
     triangleMode: triangleModeReducer,
     sussyMode: sussyModeReducer,
+    polyRoundMode: polyRoundModeReducer,
     fillBitmapShapes: fillBitmapShapesReducer,
     fillMode: fillModeReducer,
     font: fontReducer,

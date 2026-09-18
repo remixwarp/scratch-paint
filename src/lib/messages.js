@@ -70,6 +70,66 @@ const messages = defineMessages({
         defaultMessage: 'Arrow',
         description: 'Label for the arrow tool',
         id: 'paint.arrowMode.arrow'
+    },
+    polyRound: {
+        defaultMessage: 'Rounded Polygon',
+        description: 'Label for the rounded polygon tool',
+        id: 'paint.polyRoundMode.polyRound'
+    },
+    polyRoundRadius: {
+        defaultMessage: 'Corner Radius',
+        description: 'Label for the corner radius slider',
+        id: 'paint.polyRoundMode.radius'
+    },
+    polyRoundCornerStyle: {
+        defaultMessage: 'Corner Style',
+        description: 'Label for the corner style dropdown',
+        id: 'paint.polyRoundMode.cornerStyle'
+    },
+    polyRoundStyleArc: {
+        defaultMessage: 'Arc',
+        description: 'Label for the arc corner style option',
+        id: 'paint.polyRoundMode.styleArc'
+    },
+    polyRoundStyleBezier: {
+        defaultMessage: 'Bezier',
+        description: 'Label for the bezier corner style option',
+        id: 'paint.polyRoundMode.styleBezier'
+    },
+    polyRoundLimitRadius: {
+        defaultMessage: 'Consistent Radius',
+        description: 'Label for the consistent radius checkbox',
+        id: 'paint.polyRoundMode.limitRadius'
+    },
+    polyRoundPoints: {
+        defaultMessage: 'Points',
+        description: 'Label for the coordinates section',
+        id: 'paint.polyRoundMode.points'
+    },
+    polyRoundAddPoint: {
+        defaultMessage: 'Add Point',
+        description: 'Label for the add-point button',
+        id: 'paint.polyRoundMode.addPoint'
+    },
+    polyRoundClear: {
+        defaultMessage: 'Clear',
+        description: 'Label for the clear button',
+        id: 'paint.polyRoundMode.clear'
+    },
+    polyRoundDone: {
+        defaultMessage: 'Finish',
+        description: 'Label for the finish button that commits the shape to the canvas',
+        id: 'paint.polyRoundMode.done'
+    },
+    polyRoundCollapse: {
+        defaultMessage: 'Collapse / Expand',
+        description: 'Label for the collapse/expand toggle on the point list',
+        id: 'paint.polyRoundMode.collapse'
+    },
+    polyRoundHint: {
+        defaultMessage: 'Click on the canvas to add points. Finish with double-click, Enter, or the Finish button.',
+        description: 'Hint shown to the user explaining how to use the rounded polygon tool',
+        id: 'paint.polyRoundMode.hint'
     }
 });
 

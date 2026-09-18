@@ -17,6 +17,7 @@ import {changeSimplifySize as changePenSimplifySize} from '../../reducers/pen-mo
 import {changeRoundedRectCornerSize} from '../../reducers/rounded-rect-mode';
 import {changeRoundedCornerSize} from '../../reducers/rect-mode';
 import {changeTrianglePolyCount, changeTrianglePointCount} from '../../reducers/triangle-mode';
+import {changePolyRoundRadius, changePolyRoundCornerStyle, changePolyRoundLimitRadius, togglePolyRoundCollapse} from '../../reducers/poly-round-mode';
 import {changeCurrentlySelectedShape} from '../../reducers/sussy-mode';
 import {changeBitBrushSize} from '../../reducers/bit-brush-size';
 import {changeBitEraserSize} from '../../reducers/bit-eraser-size';
@@ -1170,6 +1171,135 @@ const ModeToolsComponent = props => {
             </div>
         );
     }
+    case Modes.POLY_ROUND:
+    {
+        const currentRadius = props.polyRoundRadiusValue;
+        const cornerStyle = props.polyRoundCornerStyle;
+        const limitRadius = props.polyRoundLimitRadius;
+        const collapse = props.polyRoundCollapse;
+        const rawPoints = props.polyRoundRawPoints || [];
+        const cornerLabel = props.intl.formatMessage(messages.polyRoundCornerStyle);
+        const radiusLabel = props.intl.formatMessage(messages.polyRoundRadius);
+        const styleArc = props.intl.formatMessage(messages.polyRoundStyleArc);
+        const styleBezier = props.intl.formatMessage(messages.polyRoundStyleBezier);
+        const limitLabel = props.intl.formatMessage(messages.polyRoundLimitRadius);
+        const hint = props.intl.formatMessage(messages.polyRoundHint);
+        const ptsLabel = props.intl.formatMessage(messages.polyRoundPoints);
+        const addLabel = props.intl.formatMessage(messages.polyRoundAddPoint);
+        const clearLabel = props.intl.formatMessage(messages.polyRoundClear);
+        const doneLabel = props.intl.formatMessage(messages.polyRoundDone);
+        const collapseLabel = props.intl.formatMessage(messages.polyRoundCollapse);
+
+        const pointLimit = 2;
+        const autoCollapse = collapse || rawPoints.length > pointLimit;
+
+        const pointRow = (pt, idx) => (
+            <div
+                key={idx}
+                style={{display:'flex', gap:'4px', alignItems:'center', fontSize:'11px', lineHeight:'18px', fontFamily:'monospace'}}
+            >
+                <span style={{minWidth:'18px', color:'#888'}}>{idx+1}</span>
+                <span>x</span>
+                <span style={{minWidth:'42px', color:'#1976d2'}}>{pt.x.toFixed(1)}</span>
+                <span>y</span>
+                <span style={{minWidth:'42px', color:'#1976d2'}}>{pt.y.toFixed(1)}</span>
+            </div>
+        );
+
+        return (
+            <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'8px'}}>
+                <div title={radiusLabel}>
+                    <img
+                        alt={radiusLabel}
+                        title={radiusLabel}
+                        className={styles.modeToolsIcon}
+                        draggable={false}
+                        src={roundedRectIcon}
+                    />
+                </div>
+                <LiveInput
+                    range
+                    small
+                    min={0}
+                    max={1000}
+                    type="number"
+                    value={currentRadius}
+                    onSubmit={props.onPolyRoundRadiusChange}
+                />
+                <label title={cornerLabel} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                    <span>{cornerLabel}</span>
+                    <select
+                        value={cornerStyle}
+                        onChange={e => props.onPolyRoundCornerStyleChange(e.target.value)}
+                        style={{fontSize:'12px', padding:'1px 2px'}}
+                    >
+                        <option value="arc">{styleArc}</option>
+                        <option value="bezier">{styleBezier}</option>
+                    </select>
+                </label>
+                <label title={limitLabel} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                    <input
+                        type="checkbox"
+                        checked={!!limitRadius}
+                        onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)}
+                    />
+                    <span>{limitLabel}</span>
+                </label>
+
+                <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
+                    {hint}
+                </span>
+
+                <div
+                    title={ptsLabel}
+                    style={{
+                        border:'1px solid #ccc',
+                        borderRadius:'4px',
+                        padding:'4px 6px',
+                        minWidth:'180px',
+                        maxHeight: autoCollapse ? '26px' : '200px',
+                        overflow:'auto',
+                        transition:'max-height 0.15s ease'
+                    }}
+                >
+                    <div style={{display:'flex', gap:'4px', alignItems:'center', justifyContent:'space-between', fontSize:'12px'}}>
+                        <span>{ptsLabel} ({rawPoints.length})</span>
+                        <span style={{display:'inline-flex', gap:'2px'}}>
+                            <button
+                                type="button"
+                                onClick={props.onPolyRoundToggleCollapse}
+                                title={collapseLabel}
+                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
+                            >{autoCollapse ? '+' : '-'}</button>
+                            <button
+                                type="button"
+                                onClick={props.onPolyRoundAddPoint}
+                                title={addLabel}
+                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
+                            >+</button>
+                            <button
+                                type="button"
+                                onClick={props.onPolyRoundClear}
+                                title={clearLabel}
+                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
+                            >{clearLabel}</button>
+                        </span>
+                    </div>
+                    {!autoCollapse && rawPoints.map(pointRow)}
+                </div>
+
+                {rawPoints.length >= 2 && (
+                    <button
+                        type="button"
+                        onClick={props.onPolyRoundFinish}
+                        title={doneLabel}
+                        style={{fontSize:'12px', padding:'2px 8px'}}
+                    >{doneLabel}</button>
+                )}
+            </div>
+        );
+    }
+
     case Modes.ARROW:
     {
         return (
@@ -1202,6 +1332,18 @@ ModeToolsComponent.propTypes = {
     trianglePolyValue: PropTypes.number,
     trianglePointValue: PropTypes.number,
     currentlySelectedShape: PropTypes.string,
+    polyRoundRadiusValue: PropTypes.number,
+    polyRoundCornerStyle: PropTypes.string,
+    polyRoundLimitRadius: PropTypes.bool,
+    polyRoundCollapse: PropTypes.bool,
+    polyRoundRawPoints: PropTypes.array,
+    onPolyRoundRadiusChange: PropTypes.func,
+    onPolyRoundCornerStyleChange: PropTypes.func,
+    onPolyRoundLimitRadiusChange: PropTypes.func,
+    onPolyRoundToggleCollapse: PropTypes.func,
+    onPolyRoundClear: PropTypes.func,
+    onPolyRoundAddPoint: PropTypes.func,
+    onPolyRoundFinish: PropTypes.func,
     fillBitmapShapes: PropTypes.bool,
     format: PropTypes.oneOf(Object.keys(Formats)),
     hasSelectedUncurvedPoints: PropTypes.bool,
@@ -1309,6 +1451,27 @@ const mapDispatchToProps = dispatch => ({
     },
     onTextAlignCenter: () => {
         dispatch(setTextAlignment('center'));
+    },
+    onPolyRoundRadiusChange: radius => {
+        dispatch(changePolyRoundRadius(radius));
+    },
+    onPolyRoundCornerStyleChange: cornerStyle => {
+        dispatch(changePolyRoundCornerStyle(cornerStyle));
+    },
+    onPolyRoundLimitRadiusChange: limitRadius => {
+        dispatch(changePolyRoundLimitRadius(limitRadius));
+    },
+    onPolyRoundToggleCollapse: () => {
+        dispatch(togglePolyRoundCollapse());
+    },
+    onPolyRoundClear: () => {
+        dispatch(triggerPolyRoundAction('clear'));
+    },
+    onPolyRoundAddPoint: () => {
+        dispatch(triggerPolyRoundAction('addMid'));
+    },
+    onPolyRoundFinish: () => {
+        dispatch(triggerPolyRoundAction('finish'));
     }
 });
 
