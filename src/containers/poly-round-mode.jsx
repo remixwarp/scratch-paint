@@ -17,6 +17,7 @@ import {
     changePolyRoundRadius,
     changePolyRoundCornerStyle,
     changePolyRoundLimitRadius,
+    changePolyRoundShowItems,
     setPolyRoundPoints,
     editPolyRoundPoint,
     removePolyRoundPoint,
@@ -35,15 +36,11 @@ class PolyRoundMode extends React.Component {
             'activateTool',
             'deactivateTool',
             'validateColorState',
-            'handlePointsChanged',
-            'handleSetPoint',
-            'handleRemovePoint'
+            'handlePointsChanged'
         ]);
     }
     componentDidMount () {
-        if (this.props.isPolyRoundModeActive) {
-            this.activateTool(this.props);
-        }
+        if (this.props.isPolyRoundModeActive) this.activateTool(this.props);
     }
     componentWillReceiveProps (nextProps) {
         if (this.tool) {
@@ -62,8 +59,11 @@ class PolyRoundMode extends React.Component {
             if (nextProps.limitRadius !== this.props.limitRadius) {
                 this.tool.setLimitRadius(nextProps.limitRadius);
             }
+            if (nextProps.showItems !== this.props.showItems) {
+                this.tool.setShowItems(nextProps.showItems);
+            }
 
-            // Handle dispatched toolbar actions
+            // Imperative actions from toolbar (finish / setPoint / removePoint / clear / addMid)
             const pending = nextProps.pendingAction;
             const prevPending = this.props.pendingAction;
             const tokenChanged = !!(pending && (!prevPending || pending.token !== prevPending.token));
@@ -77,14 +77,9 @@ class PolyRoundMode extends React.Component {
                         const prev = pts[pts.length - 2] || last;
                         this.tool.addPointAt(prev.add(last).divide(2));
                     }
-                } else if (name === 'finish') {
-                    this.tool.finish();
-                } else if (name === 'setPoint') {
-                    this.tool.setPointAt(pending.index, pending.x, pending.y);
-                } else if (name === 'removePoint') {
-                    this.tool.removePoint(pending.index);
-                }
-                // Acknowledge so stale values don't replay
+                } else if (name === 'finish') this.tool.finish();
+                else if (name === 'setPoint') this.tool.setPointAt(pending.index, pending.x, pending.y);
+                else if (name === 'removePoint') this.tool.removePoint(pending.index);
                 if (typeof this.props.onConsumeAction === 'function') {
                     this.props.onConsumeAction();
                 }
@@ -98,17 +93,13 @@ class PolyRoundMode extends React.Component {
         }
     }
     componentWillUnmount () {
-        if (this.tool) {
-            this.deactivateTool();
-        }
+        if (this.tool) this.deactivateTool();
     }
     activateTool () {
         clearSelection(this.props.clearSelectedItems);
         this.validateColorState();
 
-        if (typeof this.props.radius !== 'number') {
-            this.props.onChangeRadius(20);
-        }
+        if (typeof this.props.radius !== 'number') this.props.onChangeRadius(20);
 
         this.tool = new PolyRoundTool(
             this.props.setSelectedItems,
@@ -120,6 +111,7 @@ class PolyRoundMode extends React.Component {
         this.tool.setRadius(this.props.radius);
         this.tool.setCornerStyle(this.props.cornerStyle);
         this.tool.setLimitRadius(this.props.limitRadius);
+        this.tool.setShowItems(this.props.showItems);
         this.tool.setColorState(this.props.colorState);
         this.tool.activate();
     }
@@ -133,13 +125,11 @@ class PolyRoundMode extends React.Component {
         let strokeGradient = this.props.colorState.strokeColor.gradientType;
 
         if (fillColor2 === MIXED) {
-            this.props.clearFillGradient();
-            fillColor2 = null;
+            this.props.clearFillGradient(); fillColor2 = null;
             fillGradient = GradientTypes.SOLID;
         }
         if (strokeColor2 === MIXED) {
-            this.props.clearStrokeGradient();
-            strokeColor2 = null;
+            this.props.clearStrokeGradient(); strokeColor2 = null;
             strokeGradient = GradientTypes.SOLID;
         }
 
@@ -147,8 +137,7 @@ class PolyRoundMode extends React.Component {
             (fillGradient === GradientTypes.SOLID && fillColor1 === null) ||
             (fillGradient !== GradientTypes.SOLID && fillColor1 === null && fillColor2 === null);
         const strokeColorMissing = strokeColor1 === MIXED ||
-            strokeWidth === null ||
-            strokeWidth === 0 ||
+            strokeWidth === null || strokeWidth === 0 ||
             (strokeGradient === GradientTypes.SOLID && strokeColor1 === null) ||
             (strokeGradient !== GradientTypes.SOLID && strokeColor1 === null && strokeColor2 === null);
 
@@ -174,19 +163,7 @@ class PolyRoundMode extends React.Component {
         this.props.onSyncPoints([]);
     }
 
-    handlePointsChanged (pts) {
-        this.props.onSyncPoints(pts);
-    }
-    handleSetPoint (index, x, y) {
-        if (this.tool) {
-            this.tool.setPointAt(index, x, y);
-        }
-    }
-    handleRemovePoint (index) {
-        if (this.tool) {
-            this.tool.removePoint(index);
-        }
-    }
+    handlePointsChanged (pts) { this.props.onSyncPoints(pts); }
 
     render () {
         return (
@@ -216,6 +193,7 @@ PolyRoundMode.propTypes = {
     onChangeRadius: PropTypes.func.isRequired,
     onChangeCornerStyle: PropTypes.func.isRequired,
     onChangeLimitRadius: PropTypes.func.isRequired,
+    onChangeShowItems: PropTypes.func.isRequired,
     onSyncPoints: PropTypes.func.isRequired,
     onUpdateImage: PropTypes.func.isRequired,
     pendingAction: PropTypes.shape({token: PropTypes.number, name: PropTypes.string}),
@@ -223,6 +201,7 @@ PolyRoundMode.propTypes = {
     onSetPoint: PropTypes.func.isRequired,
     onRemovePoint: PropTypes.func.isRequired,
     radius: PropTypes.number.isRequired,
+    showItems: PropTypes.string.isRequired,
     selectedItems: PropTypes.arrayOf(PropTypes.instanceOf(paper.Item)),
     setCursor: PropTypes.func.isRequired,
     setSelectedItems: PropTypes.func.isRequired
@@ -235,51 +214,28 @@ const mapStateToProps = state => ({
     radius: state.scratchPaint.polyRoundMode.radius,
     cornerStyle: state.scratchPaint.polyRoundMode.cornerStyle,
     limitRadius: state.scratchPaint.polyRoundMode.limitRadius,
+    showItems: state.scratchPaint.polyRoundMode.showItems,
     pendingAction: state.scratchPaint.polyRoundMode.pendingAction
 });
 const mapDispatchToProps = dispatch => ({
-    clearSelectedItems: () => {
-        dispatch(clearSelectedItems());
-    },
-    clearFillGradient: () => {
-        dispatch(clearFillGradient());
-    },
-    clearStrokeGradient: () => {
-        dispatch(clearStrokeGradient());
-    },
+    clearSelectedItems: () => { dispatch(clearSelectedItems()); },
+    clearFillGradient: () => { dispatch(clearFillGradient()); },
+    clearStrokeGradient: () => { dispatch(clearStrokeGradient()); },
     setSelectedItems: () => {
         dispatch(setSelectedItems(getSelectedLeafItems(), false /* bitmapMode */));
     },
-    setCursor: cursorString => {
-        dispatch(setCursor(cursorString));
-    },
-    handleMouseDown: () => {
-        dispatch(changeMode(Modes.POLY_ROUND));
-    },
-    onChangeFillColor: fillColor => {
-        dispatch(changeFillColor(fillColor));
-    },
-    onChangeStrokeColor: strokeColor => {
-        dispatch(changeStrokeColor(strokeColor));
-    },
-    onChangeRadius: radius => {
-        dispatch(changePolyRoundRadius(radius));
-    },
-    onChangeCornerStyle: cornerStyle => {
-        dispatch(changePolyRoundCornerStyle(cornerStyle));
-    },
-    onChangeLimitRadius: limitRadius => {
-        dispatch(changePolyRoundLimitRadius(limitRadius));
-    },
-    onSyncPoints: points => {
-        dispatch(setPolyRoundPoints(points));
-    },
-    onConsumeAction: () => {
-        dispatch(consumePolyRoundAction());
-    },
+    setCursor: cursorString => { dispatch(setCursor(cursorString)); },
+    handleMouseDown: () => { dispatch(changeMode(Modes.POLY_ROUND)); },
+    onChangeFillColor: fillColor => { dispatch(changeFillColor(fillColor)); },
+    onChangeStrokeColor: strokeColor => { dispatch(changeStrokeColor(strokeColor)); },
+    onChangeRadius: radius => { dispatch(changePolyRoundRadius(radius)); },
+    onChangeCornerStyle: cornerStyle => { dispatch(changePolyRoundCornerStyle(cornerStyle)); },
+    onChangeLimitRadius: limitRadius => { dispatch(changePolyRoundLimitRadius(limitRadius)); },
+    onChangeShowItems: showItems => { dispatch(changePolyRoundShowItems(showItems)); },
+    onSyncPoints: points => { dispatch(setPolyRoundPoints(points)); },
+    onConsumeAction: () => { dispatch(consumePolyRoundAction()); },
     onSetPoint: (index, x, y) => {
         dispatch(editPolyRoundPoint(index, x, y));
-        // Also send an imperative action so the tool actually moves the point
         dispatch(triggerPolyRoundAction('setPoint', {index, x, y}));
     },
     onRemovePoint: index => {
@@ -288,7 +244,4 @@ const mapDispatchToProps = dispatch => ({
     }
 });
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(PolyRoundMode);
+export default connect(mapStateToProps, mapDispatchToProps)(PolyRoundMode);

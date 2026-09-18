@@ -3,6 +3,7 @@ import log from '../log/log';
 const CHANGE_POLY_ROUND_RADIUS = 'scratch-paint/poly-round-mode/CHANGE_RADIUS';
 const CHANGE_POLY_ROUND_CORNER_STYLE = 'scratch-paint/poly-round-mode/CHANGE_CORNER_STYLE';
 const CHANGE_POLY_ROUND_LIMIT_RADIUS = 'scratch-paint/poly-round-mode/CHANGE_LIMIT_RADIUS';
+const CHANGE_POLY_ROUND_SHOW_ITEMS = 'scratch-paint/poly-round-mode/CHANGE_SHOW_ITEMS';
 const TOGGLE_POLY_ROUND_COLLAPSE = 'scratch-paint/poly-round-mode/TOGGLE_COLLAPSE';
 const SET_POLY_ROUND_POINTS = 'scratch-paint/poly-round-mode/SET_POINTS';
 const EDIT_POLY_ROUND_POINT = 'scratch-paint/poly-round-mode/EDIT_POINT';
@@ -16,9 +17,10 @@ const initialState = {
     radius: 20,
     cornerStyle: 'arc',
     limitRadius: false,
+    showItems: 'both',  // 'both' | 'markers' | 'guide' | 'none'
     collapsePoints: false,
     rawPoints: [],
-    pendingAction: null    // {token, name} — consumed once, then cleared
+    pendingAction: null    // {token, name, ...payload}
 };
 
 const reducer = function (state, action) {
@@ -38,6 +40,14 @@ const reducer = function (state, action) {
         return Object.assign({}, state, {cornerStyle: action.cornerStyle});
     case CHANGE_POLY_ROUND_LIMIT_RADIUS:
         return Object.assign({}, state, {limitRadius: !!action.limitRadius});
+    case CHANGE_POLY_ROUND_SHOW_ITEMS: {
+        const valid = ['both', 'markers', 'guide', 'none'];
+        if (!valid.includes(action.showItems)) {
+            log.warn(`Invalid poly-round showItems: ${action.showItems}`);
+            return state;
+        }
+        return Object.assign({}, state, {showItems: action.showItems});
+    }
     case TOGGLE_POLY_ROUND_COLLAPSE:
         return Object.assign({}, state, {collapsePoints: !state.collapsePoints});
     case SET_POLY_ROUND_POINTS:
@@ -55,15 +65,11 @@ const reducer = function (state, action) {
         return Object.assign({}, state, {rawPoints: pts});
     }
     case TRIGGER_POLY_ROUND_ACTION:
-        // Stash with a unique token so repeated clicks of the same button
-        // still produce a fresh prop change that the container sees.
         actionCounter += 1;
         return Object.assign({}, state, {
             pendingAction: Object.assign({token: actionCounter, name: action.name}, action.payload || {})
         });
     case CONSUME_POLY_ROUND_ACTION:
-        // Cleared by the container right after handling, so stale values
-        // don't get replayed on the next tool activation.
         return Object.assign({}, state, {pendingAction: null});
     default:
         return state;
@@ -78,6 +84,9 @@ const changePolyRoundCornerStyle = function (cornerStyle) {
 };
 const changePolyRoundLimitRadius = function (limitRadius) {
     return {type: CHANGE_POLY_ROUND_LIMIT_RADIUS, limitRadius};
+};
+const changePolyRoundShowItems = function (showItems) {
+    return {type: CHANGE_POLY_ROUND_SHOW_ITEMS, showItems};
 };
 const togglePolyRoundCollapse = function () {
     return {type: TOGGLE_POLY_ROUND_COLLAPSE};
@@ -103,6 +112,7 @@ export {
     changePolyRoundRadius,
     changePolyRoundCornerStyle,
     changePolyRoundLimitRadius,
+    changePolyRoundShowItems,
     togglePolyRoundCollapse,
     setPolyRoundPoints,
     editPolyRoundPoint,

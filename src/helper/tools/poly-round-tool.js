@@ -6,122 +6,148 @@ import BoundingBoxTool from '../selection-tools/bounding-box-tool';
 import NudgeTool from '../selection-tools/nudge-tool';
 
 /**
- * Build a closed rounded paper.Path from an array of points using the
- * PolyGoneRound algorithm (https://github.com/99-Knots/PolyGoneRound).
+ * Build a closed rounded paper.Path from an array of raw polygon vertices
+ * using the PolyGoneRound algorithm (https://github.com/99-Knots/PolyGoneRound).
+ *
+ * This port is mathematically identical to PolyGoneRound:
+ *   - For each vertex compute unit vectors v1 (prev→cur) and v2 (cur→next)
+ *   - Compute inner angle θ and clamp tangent distance l so neither edge
+ *     loses more than half its length
+ *   - tangent point on edge-in  = p − v1 * l
+ *   - tangent point on edge-out = p + v2 * l
+ *   - Use SVG arc (sweep=1 when inner angle < π, sweep=0 when > π) with
+ *     the computed corner radius
  *
  * @param {Array<paper.Point>} rawPoints polygon vertices in order
- * @param {number} radius desired corner radius in pixels
- * @param {boolean} limitRadius if true, force every corner to use the same (clamped) radius
- * @param {string} cornerStyle 'arc' (SVG arc) or 'bezier' (quadratic curve to vertex)
- * @returns {paper.Path} closed rounded path, or null if not enough points
+ * @param {number} radius desired corner radius in pixels (0 = straight corner)
+ * @param {boolean} limitRadius if true, every corner uses the same (minimal) radius
+ * @param {string} cornerStyle 'arc' (SVG arc) or 'bezier' (quadratic curve through vertex)
+ * @returns {?paper.Path} closed rounded path, or null if not enough points
  */
 function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
     if (!rawPoints || rawPoints.length < 2) return null;
+    if (rawPoints.length === 2) {
+        // Two vertices → straight line between them
+        const line = new paper.Path(rawPoints);
+        line.closed = false;
+        return line;
+    }
 
     const n = rawPoints.length;
 
+    // Step 1 — per-vertex parameters (same as PolyGoneRound._getPointParameters)
     const params = rawPoints.map((p, i) => {
         const prev = rawPoints[(i - 1 + n) % n];
-        const curr = p;
         const next = rawPoints[(i + 1) % n];
-        const v1 = curr.subtract(prev);
-        const v2 = next.subtract(curr);
+
+        // v1 = from prev to p; v2 = from p to next
+        const v1 = new paper.Point(p.x - prev.x, p.y - prev.y);
+        const v2 = new paper.Point(next.x - p.x, next.y - p.y);
+
         const len1 = v1.length;
         const len2 = v2.length;
-        if (len1 < 1e-6 || len2 < 1e-6) {
-            return null;
-        }
+        if (len1 < 1e-4 || len2 < 1e-4) return null;
+
         const u1 = v1.normalize();
         const u2 = v2.normalize();
-        // signed angle from u1 to u2 (CCW positive in paper's standard coord)
-        const angle = Math.atan2(
-            u1.x * u2.y - u1.y * u2.x,
-            u1.x * u2.x + u1.y * u2.y
-        );
-        const half = Math.abs(angle) / 2;
-        let tanLen = radius / (Math.tan(half) || 1e-9);
+
+        // tail-tail angle (atan2(v2) − atan2(v1)), PolyGoneRound line
+        let angle = Math.atan2(v2.y, v2.x) - Math.atan2(v1.y, v1.x);
+        // tip-tail inner angle, wrap into [0, 2π)
+        angle = Math.PI - angle;
+        angle = (angle + 2 * Math.PI) % (2 * Math.PI);
+        // sweep=1 means CW (SVG convention), 0 means CCW
+        const sweep = angle > Math.PI ? 0 : 1;
+
+        // tangent distance along each edge
+        let l = radius / Math.abs(Math.tan(angle / 2 || 1e-9));
         let r = radius;
-        const maxLen = Math.min(len1, len2) / 2;
-        if (tanLen > maxLen) {
-            tanLen = maxLen;
-            r = maxLen * Math.tan(half);
+
+        // Clamp l to half of the shorter edge → also clamps r
+        const half = Math.min(len1, len2) / 2;
+        if (l > half) {
+            l = half;
+            r = half * Math.abs(Math.tan(angle / 2 || 1e-9));
         }
-        return {
-            p: curr,
-            u1, u2,
-            len1, len2,
-            angle,          // signed
-            half,
-            tanLen,
-            r,
-            clockwise: angle > 0
-        };
+
+        return {p, u1, u2, angle, sweep, r, l, len1, len2};
     });
 
-    if (params.some(p => p === null)) {
+    if (params.some(x => x === null)) {
         const fallback = new paper.Path(rawPoints);
         fallback.closed = true;
         return fallback;
     }
 
+    // Step 2 — if limitRadius, use minimum radius everywhere
     if (limitRadius) {
-        const minR = params.reduce((min, p) => Math.min(min, p.r), Infinity);
-        for (let i = 0; i < params.length; i++) {
-            params[i].r = minR;
-            const tan = minR / (Math.tan(params[i].half) || 1e-9);
-            params[i].tanLen = Math.min(tan, Math.min(params[i].len1, params[i].len2) / 2);
+        const minR = params.reduce((m, p) => Math.min(m, p.r), Infinity);
+        for (const p of params) {
+            p.r = minR;
+            p.l = minR / Math.abs(Math.tan(p.angle / 2 || 1e-9));
+            // Re-clamp l just in case
+            const half = Math.min(p.len1, p.len2) / 2;
+            if (p.l > half) p.l = half;
         }
     }
 
-    const path = new paper.Path();
-    path.closed = true;
-
+    // Step 3 — build path by constructing an SVG d-string and importing it.
+    // Paper.js's native Path.arc / Path.arcTo have quirks (arcTo uses Canvas-2D
+    // semantics with a corner point and no direct sweep control). Using an SVG
+    // arc A command gives us perfect 1:1 match with PolyGoneRound.
+    let d = '';
     for (let i = 0; i < n; i++) {
         const cur = params[i];
 
-        const tIn = cur.p.subtract(cur.u1.multiply(cur.tanLen));
-        const tOut = cur.p.add(cur.u2.multiply(cur.tanLen));
+        const tIn = cur.p.subtract(cur.u1.multiply(cur.l));
+        const tOut = cur.p.add(cur.u2.multiply(cur.l));
 
         if (i === 0) {
-            path.moveTo(tIn);
+            d += `M ${tIn.x} ${tIn.y}`;
         } else {
-            path.lineTo(tIn);
+            d += ` L ${tIn.x} ${tIn.y}`;
         }
 
         if (cornerStyle === 'bezier') {
-            path.quadraticCurveTo(cur.p, tOut);
+            // Quadratic curve through the vertex — matches PolyGoneRound Q command
+            d += ` Q ${cur.p.x} ${cur.p.y} ${tOut.x} ${tOut.y}`;
         } else {
-            path.arcTo(cur.p, tOut, cur.clockwise);
+            // SVG arc. largeArc is always 0 because our sweep is always
+            // < π inner angle (we use clamp so r never exceeds half-edge).
+            // r can be 0 for straight corners — emit a line instead.
+            if (cur.r > 1e-4) {
+                d += ` A ${cur.r} ${cur.r} 0 0 ${cur.sweep} ${tOut.x} ${tOut.y}`;
+            } else {
+                d += ` L ${tOut.x} ${tOut.y}`;
+            }
         }
     }
+    d += ' Z';
 
+    const path = new paper.Path(d);
+    path.closed = true;
     return path;
 }
 
+
 /**
- * Tool for drawing rounded polygons by clicking points on the canvas.
- * Analogous to https://github.com/99-Knots/PolyGoneRound but integrated
- * into Scratch Paint as a real-time paper.js Path.
+ * Rounded polygon tool — click points, optionally drag markers,
+ * finish on double-click / Enter / Escape / tool-switch.
  *
- * Convention (shared with rounded-rect-tool / triangle-tool / etc.):
- *   - Live preview is drawn with paper.js directly (no onUpdateImage)
- *   - onUpdateImage is called *only* when a shape is FINISHED / committed,
- *     so scratch-paint's undo reducer snapshots the final shape.
+ * All live items go on project.activeLayer with data flags so we can
+ * hide / transform them. onUpdateImage fires ONLY at finish so the
+ * undo stack stays compact.
  */
 class PolyRoundTool extends paper.Tool {
     static get SNAP_TOLERANCE () {
-        return 5;
+        // Tolerance (in CSS pixels) used to decide "did the user just
+        // tap/click on an existing marker?" On touch devices the finger
+        // pad is ~40px wide so 18 CSS px is required to actually hit it.
+        return 18;
     }
     static get TOLERANCE () {
         return 2;
     }
-    /**
-     * @param {function} setSelectedItems Callback to set the set of selected items in the Redux state
-     * @param {function} clearSelectedItems Callback to clear the set of selected items in the Redux state
-     * @param {function} setCursor Callback to set the visible mouse cursor
-     * @param {!function} onUpdateImage A callback to call when the image visibly changes
-     * @param {function} onPointsChanged Callback invoked with the array of current raw points each time they change
-     */
     constructor (setSelectedItems, clearSelectedItems, setCursor, onUpdateImage, onPointsChanged) {
         super();
         this.setSelectedItems = setSelectedItems;
@@ -149,23 +175,19 @@ class PolyRoundTool extends paper.Tool {
         this.radius = 20;
         this.cornerStyle = 'arc';
         this.limitRadius = false;
+        this.showItems = 'both'; // 'both' | 'markers' | 'guide' | 'none'
 
-        // in-progress polygon state (all live items go on project.activeLayer
-        // with data.isPolyRoundLive / data.isPolyRoundGuide / data.isPolyRoundMarker
-        // so paper renders them immediately; we only commit undo on finish()).
         this._rawPoints = [];
-        this._markers = [];   // array of paper.Path.Circle / rect markers
-        this._guide = null;   // dashed closed Path of raw vertices
-        this._preview = null; // live rounded preview Path
+        this._markers = [];
+        this._guide = null;
+        this._preview = null;
         this._draggingIndex = -1;
         this._active = false;
     }
 
     setColorState (colorState) {
         this.colorState = colorState;
-        if (this._preview) {
-            styleShape(this._preview, this.colorState);
-        }
+        if (this._preview) styleShape(this._preview, this.colorState);
     }
     setRadius (r) {
         this.radius = Math.max(0, r);
@@ -179,22 +201,14 @@ class PolyRoundTool extends paper.Tool {
         this.limitRadius = !!b;
         this._regeneratePreview();
     }
-
-    /**
-     * Called by the container whenever scratch-paint's Redux state for the
-     * current selection changes. Used to keep the selection bounding box
-     * aligned with what the rest of the paint editor sees.
-     */
-    onSelectionChanged (selectedItems) {
-        if (this.boundingBoxTool) {
-            this.boundingBoxTool.onSelectionChanged(selectedItems);
-        }
+    setShowItems (showItems) {
+        this.showItems = showItems;
+        this._applyVisibility();
     }
 
-    /**
-     * Return hit-test options used by the boundingBoxTool / container when
-     * deciding whether to route a mouse event to the selection handler.
-     */
+    onSelectionChanged (selectedItems) {
+        if (this.boundingBoxTool) this.boundingBoxTool.onSelectionChanged(selectedItems);
+    }
     getHitOptions () {
         return {
             segments: true,
@@ -205,36 +219,20 @@ class PolyRoundTool extends paper.Tool {
         };
     }
 
-    getRawPoints () {
-        return this._rawPoints.slice();
-    }
+    getRawPoints () { return this._rawPoints.slice(); }
 
     addPointAt (p) {
         this._rawPoints.push(p.clone());
         this._rebuildMarkers();
         this._regeneratePreview();
         this._emitPointsChanged();
-        // NOTE: intentionally NOT calling onUpdateImage here — live editing
-        // is paper-only; onUpdateImage fires only on finish/clear so the
-        // undo stack stays compact.
     }
 
     clear () {
         this._discardLive();
         this._emitPointsChanged();
-        // Clear only matters if we had something to erase — but we don't know
-        // if the user had committed anything. Since clear() only touches the
-        // live preview (which never makes it into undo), we don't need to call
-        // onUpdateImage here. Commit-time calls will happen when needed.
     }
 
-    /**
-     * Move a specific raw vertex to a new coordinate (called from the top
-     * toolbar point-list inputs).
-     * @param {number} index vertex index
-     * @param {number} x new x
-     * @param {number} y new y
-     */
     setPointAt (index, x, y) {
         if (index < 0 || index >= this._rawPoints.length) return;
         const p = this._rawPoints[index];
@@ -245,16 +243,11 @@ class PolyRoundTool extends paper.Tool {
         this._emitPointsChanged();
     }
 
-    /**
-     * Remove a specific raw vertex (called from the point-list delete button).
-     * @param {number} index
-     */
     removePoint (index) {
         if (index < 0 || index >= this._rawPoints.length) return;
         const marker = this._markers.splice(index, 1)[0];
         if (marker) marker.remove();
         this._rawPoints.splice(index, 1);
-        // Re-tag marker indices so drag-hit-test still works
         this._markers.forEach((m, i) => { m.data.index = i; });
         this._regeneratePreview();
         this._emitPointsChanged();
@@ -262,49 +255,50 @@ class PolyRoundTool extends paper.Tool {
 
     /**
      * Commit the live rounded shape into the document as a regular selected
-     * item, then let the usual undo pipeline record it.
+     * item, then fire the standard undo pipeline.
+     *
+     * Order matters: clear paper selection first, THEN select the new path,
+     * THEN dispatch Redux's setSelectedItems (which reads paper.selectedItems).
+     * The previous buggy order (select → clearSelection → setSelectedItems)
+     * wiped out our new path because clearSelection calls project.deselectAll().
+     *
      * @returns {boolean} true if something was committed
      */
     finish () {
         if (!this._preview) return false;
 
-        // The preview Path is already on project.activeLayer (we never
-        // remove it during live editing — see _regeneratePreview). Just
-        // strip our internal flags, clean up markers/guide, select it,
-        // and fire the standard scratch-paint update pipeline so the
-        // shape becomes a first-class committed item.
         const path = this._preview;
         this._preview = null;
 
-        if (this._guide) {
-            this._guide.remove();
-            this._guide = null;
-        }
+        if (this._guide) { this._guide.remove(); this._guide = null; }
         this._markers.forEach(m => m.remove());
         this._markers = [];
         this._rawPoints = [];
 
-        // IMPORTANT: clear paper selection FIRST, THEN select the new path,
-        // THEN dispatch Redux's setSelectedItems (which reads paper.selectedItems).
-        // The previous order (select → clearSelection → setSelectedItems) was
-        // broken because clearSelection calls paper.project.deselectAll() which
-        // wiped out our newly-set path.selected.
         paper.project.deselectAll();
         delete path.data.isPolyRoundLive;
         path.selected = true;
+
         this.setSelectedItems();
         this.boundingBoxTool.onSelectionChanged(paper.project.selectedItems);
         this.onUpdateImage();
         return true;
     }
 
-    // ----- private helpers -----
+    // ----- private -----
+
+    _applyVisibility () {
+        const s = this.showItems || 'both';
+        const showMarkers = s === 'both' || s === 'markers';
+        const showGuide = s === 'both' || s === 'guide';
+        for (const m of this._markers) m.visible = showMarkers;
+        if (this._guide) this._guide.visible = showGuide;
+    }
 
     _rebuildMarkers () {
-        // Clear existing
         this._markers.forEach(m => m.remove());
         this._markers = [];
-        const dotSize = 20 / paper.view.zoom;  // doubled from 5 for mobile touchability
+        const dotSize = 6 / paper.view.zoom; // radius in view coords (12px diameter)
         for (let i = 0; i < this._rawPoints.length; i++) {
             const p = this._rawPoints[i];
             const dot = new paper.Path.Circle({
@@ -318,6 +312,7 @@ class PolyRoundTool extends paper.Tool {
             dot.data.index = i;
             this._markers.push(dot);
         }
+        this._applyVisibility();
     }
 
     _ensureGuide () {
@@ -328,29 +323,22 @@ class PolyRoundTool extends paper.Tool {
         this._guide.strokeWidth = 1 / paper.view.zoom;
         this._guide.closed = true;
         this._guide.data.isPolyRoundGuide = true;
+        this._applyVisibility();
     }
 
     _regeneratePreview () {
         if (this._rawPoints.length < 2) {
-            if (this._preview) {
-                this._preview.remove();
-                this._preview = null;
-            }
-            if (this._guide) {
-                this._guide.removeSegments();
-            }
+            if (this._preview) { this._preview.remove(); this._preview = null; }
+            if (this._guide) this._guide.removeSegments();
             return;
         }
         const rounded = buildRoundedPath(
-            this._rawPoints,
-            this.radius,
-            this.limitRadius,
-            this.cornerStyle
+            this._rawPoints, this.radius, this.limitRadius, this.cornerStyle
         );
         if (!rounded) return;
 
         if (this._preview) {
-            // Update in place to keep node identity stable.
+            // Update in place for stable node identity
             this._preview.removeSegments();
             this._preview.setSegments(rounded.segments);
             this._preview.closed = true;
@@ -368,14 +356,8 @@ class PolyRoundTool extends paper.Tool {
     }
 
     _discardLive () {
-        if (this._preview) {
-            this._preview.remove();
-            this._preview = null;
-        }
-        if (this._guide) {
-            this._guide.remove();
-            this._guide = null;
-        }
+        if (this._preview) { this._preview.remove(); this._preview = null; }
+        if (this._guide) { this._guide.remove(); this._guide = null; }
         this._markers.forEach(m => m.remove());
         this._markers = [];
         this._rawPoints = [];
@@ -388,55 +370,43 @@ class PolyRoundTool extends paper.Tool {
         }
     }
 
-    // ----- paper.Tool event handlers -----
+    // ----- paper.Tool events -----
 
     handleMouseDown (event) {
         if (event.event.button > 0) return;
         this._active = true;
 
-        // Clicking on an existing marker while editing → start dragging it.
-        // Markers are regular Path items on activeLayer (data.isPolyRoundMarker).
-        const hit = paper.project.hitTest(event.point, {
+        // 1) Marker hit-test with generous tolerance for touch
+        const markerHit = paper.project.hitTest(event.point, {
             tolerance: PolyRoundTool.SNAP_TOLERANCE / paper.view.zoom,
             fill: true,
             stroke: true,
-            match: hitResult => hitResult.item && hitResult.item.data && hitResult.item.data.isPolyRoundMarker
+            match: hit => hit.item && hit.item.data && hit.item.data.isPolyRoundMarker
         });
-        if (hit && hit.item && typeof hit.item.data.index === 'number') {
-            this._draggingIndex = hit.item.data.index;
+        if (markerHit && markerHit.item && typeof markerHit.item.data.index === 'number') {
+            this._draggingIndex = markerHit.item.data.index;
             return;
         }
 
-        // Try bounding-box selection on an already-committed item ONLY —
-        // never try to transform our own live preview, guide, or markers.
-        // We do this by hitting paper directly first; if the hit is on a
-        // live poly-round item, skip bounding-box and go straight to addPoint.
+        // 2) Clicked our own live preview / guide → treat as adding vertex,
+        // NOT as bounding-box transform on a committed item.
         const liveHit = paper.project.hitTest(event.point, {
             tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom,
-            fill: true,
-            stroke: true,
-            segments: true,
-            curves: true,
+            fill: true, stroke: true, segments: true, curves: true,
             match: hit => hit.item && hit.item.data &&
                 (hit.item.data.isPolyRoundLive || hit.item.data.isPolyRoundGuide)
         });
         if (liveHit) {
-            // Clicked on our own live preview → treat as adding a new point,
-            // not bounding-box transform.
             clearSelection(this.clearSelectedItems);
             this.isBoundingBoxMode = false;
             this.addPointAt(event.point);
             return;
         }
 
-        // If we already have at least 2 points and click the same spot as a
-        // marker, handleMouseDown above already routed to draggingIndex.
+        // 3) Bounding-box transform on a committed item from earlier
         if (this.boundingBoxTool.onMouseDown(
             event, false, false, false, {
-                segments: true,
-                stroke: true,
-                curves: true,
-                fill: true,
+                segments: true, stroke: true, curves: true, fill: true,
                 guide: false,
                 tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom
             })) {
@@ -444,6 +414,7 @@ class PolyRoundTool extends paper.Tool {
             return;
         }
 
+        // 4) Add new vertex
         clearSelection(this.clearSelectedItems);
         this.isBoundingBoxMode = false;
         this.addPointAt(event.point);
@@ -459,12 +430,10 @@ class PolyRoundTool extends paper.Tool {
 
         if (this._draggingIndex >= 0 && this._draggingIndex < this._rawPoints.length) {
             this._rawPoints[this._draggingIndex].set(event.point);
-            // Move the matching marker too.
             const m = this._markers[this._draggingIndex];
             if (m) m.position = event.point;
             this._regeneratePreview();
             this._emitPointsChanged();
-            // Intentionally no onUpdateImage — still live editing.
         }
     }
 
@@ -479,20 +448,13 @@ class PolyRoundTool extends paper.Tool {
     }
 
     handleDoubleClick () {
-        // Treat double-click as finish signal (the first click of the dblclick
-        // may have already added a point — user can undo if needed).
-        if (this._rawPoints.length >= 2) {
-            this.finish();
-        }
+        if (this._rawPoints.length >= 2) this.finish();
     }
 
     handleMouseMove (event) {
         if (this.isBoundingBoxMode) {
             this.boundingBoxTool.onMouseMove(event, {
-                segments: true,
-                stroke: true,
-                curves: true,
-                fill: true,
+                segments: true, stroke: true, curves: true, fill: true,
                 guide: false,
                 tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom
             });
@@ -502,15 +464,12 @@ class PolyRoundTool extends paper.Tool {
     onKeyDown (event) {
         const key = event.key;
         if (key === 'enter' || key === 'space') {
-            if (this._rawPoints.length >= 2) {
-                this.finish();
-            }
+            if (this._rawPoints.length >= 2) this.finish();
             event.preventDefault();
             return;
         }
         if (key === 'delete' || key === 'backspace') {
             if (this._rawPoints.length > 0) {
-                // Remove marker from canvas as well
                 const removed = this._markers.pop();
                 if (removed) removed.remove();
                 this._rawPoints.pop();
@@ -527,7 +486,18 @@ class PolyRoundTool extends paper.Tool {
         }
     }
 
+    /**
+     * Called when user switches to another tool / mode. Auto-commit the
+     * live shape (equivalent to clicking "完成") so it doesn't vanish.
+     * If there's nothing meaningful to commit, just clean up.
+     */
     deactivateTool () {
+        // Prefer finish() so the shape gets committed instead of discarded.
+        const hadLive = !!this._preview;
+        const hadMarkers = this._rawPoints.length >= 2;
+        if (hadLive || hadMarkers) {
+            this.finish();
+        }
         this.boundingBoxTool.deactivateTool();
         this._discardLive();
     }

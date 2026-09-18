@@ -19,6 +19,7 @@ import {changeRoundedCornerSize} from '../../reducers/rect-mode';
 import {changeTrianglePolyCount, changeTrianglePointCount} from '../../reducers/triangle-mode';
 import {
     changePolyRoundRadius, changePolyRoundCornerStyle, changePolyRoundLimitRadius,
+    changePolyRoundShowItems,
     togglePolyRoundCollapse, editPolyRoundPoint, removePolyRoundPoint,
     triggerPolyRoundAction
 } from '../../reducers/poly-round-mode';
@@ -299,6 +300,31 @@ const ModeToolsComponent = props => {
             defaultMessage: '在画板上点击放置顶点；双击、回车或点"完成"生成圆角多边形。',
             description: 'User-facing hint explaining how to use the rounded polygon tool',
             id: 'paint.modeTools.polyRoundHint'
+        },
+        polyRoundShowItems: {
+            defaultMessage: '显示辅助',
+            description: 'Label for the show/hide markers & guide dropdown',
+            id: 'paint.modeTools.polyRoundShowItems'
+        },
+        polyRoundShowBoth: {
+            defaultMessage: '端点+参考线',
+            description: 'Dropdown option: show both markers and guide',
+            id: 'paint.modeTools.polyRoundShowBoth'
+        },
+        polyRoundShowMarkers: {
+            defaultMessage: '仅端点',
+            description: 'Dropdown option: show only vertex markers',
+            id: 'paint.modeTools.polyRoundShowMarkers'
+        },
+        polyRoundShowGuide: {
+            defaultMessage: '仅参考线',
+            description: 'Dropdown option: show only the dashed guide',
+            id: 'paint.modeTools.polyRoundShowGuide'
+        },
+        polyRoundShowNone: {
+            defaultMessage: '都不显示',
+            description: 'Dropdown option: hide markers and guide',
+            id: 'paint.modeTools.polyRoundShowNone'
         },
 
         arrowTipResize: {
@@ -1242,18 +1268,23 @@ const ModeToolsComponent = props => {
         const currentRadius = props.polyRoundRadiusValue;
         const cornerStyle = props.polyRoundCornerStyle;
         const limitRadius = props.polyRoundLimitRadius;
+        const showItems = props.polyRoundShowItems || 'both';
         const collapse = props.polyRoundCollapse;
         const rawPoints = props.polyRoundRawPoints || [];
 
-        const pointLimit = 2;
-        const autoCollapse = collapse || rawPoints.length > pointLimit;
+        const autoCollapse = collapse || rawPoints.length > 2;
 
-        const pointRow = (pt, idx) => (
+        const pointCard = (pt, idx) => (
             <div
                 key={idx}
-                style={{display:'flex', gap:'4px', alignItems:'center', fontSize:'11px', lineHeight:'18px', fontFamily:'monospace'}}
+                style={{
+                    display:'flex', gap:'4px', alignItems:'center',
+                    fontSize:'11px', lineHeight:'20px', fontFamily:'monospace',
+                    border:'1px solid #ddd', borderRadius:'3px', padding:'2px 4px',
+                    background:'#fafafa', minWidth:'140px'
+                }}
             >
-                <span style={{minWidth:'18px', color:'#888'}}>{idx+1}</span>
+                <span style={{minWidth:'18px', color:'#888', textAlign:'center'}}>{idx+1}</span>
                 <span>x</span>
                 <input
                     type="number"
@@ -1320,6 +1351,19 @@ const ModeToolsComponent = props => {
                     />
                     <span>{props.intl.formatMessage(messages.polyRoundLimitRadius)}</span>
                 </label>
+                <label title={props.intl.formatMessage(messages.polyRoundShowItems)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                    <span>{props.intl.formatMessage(messages.polyRoundShowItems)}</span>
+                    <select
+                        value={showItems}
+                        onChange={e => props.onPolyRoundShowItemsChange(e.target.value)}
+                        style={{fontSize:'12px', padding:'1px 2px'}}
+                    >
+                        <option value="both">{props.intl.formatMessage(messages.polyRoundShowBoth)}</option>
+                        <option value="markers">{props.intl.formatMessage(messages.polyRoundShowMarkers)}</option>
+                        <option value="guide">{props.intl.formatMessage(messages.polyRoundShowGuide)}</option>
+                        <option value="none">{props.intl.formatMessage(messages.polyRoundShowNone)}</option>
+                    </select>
+                </label>
 
                 <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
                     {props.intl.formatMessage(messages.polyRoundHint)}
@@ -1331,8 +1375,7 @@ const ModeToolsComponent = props => {
                         border:'1px solid #ccc',
                         borderRadius:'4px',
                         padding:'4px 6px',
-                        minWidth:'180px',
-                        maxHeight: autoCollapse ? '26px' : '200px',
+                        maxHeight: autoCollapse ? '26px' : '260px',
                         overflow:'auto',
                         transition:'max-height 0.15s ease'
                     }}
@@ -1360,7 +1403,11 @@ const ModeToolsComponent = props => {
                             >{props.intl.formatMessage(messages.polyRoundClear)}</button>
                         </span>
                     </div>
-                    {!autoCollapse && rawPoints.map(pointRow)}
+                    {!autoCollapse && (
+                        <div style={{display:'flex', flexWrap:'wrap', gap:'4px', marginTop:'4px'}}>
+                            {rawPoints.map(pointCard)}
+                        </div>
+                    )}
                 </div>
 
                 {rawPoints.length >= 2 && (
@@ -1410,12 +1457,16 @@ ModeToolsComponent.propTypes = {
     polyRoundRadiusValue: PropTypes.number,
     polyRoundCornerStyle: PropTypes.string,
     polyRoundLimitRadius: PropTypes.bool,
+    polyRoundShowItems: PropTypes.string,
     polyRoundCollapse: PropTypes.bool,
     polyRoundRawPoints: PropTypes.array,
     onPolyRoundRadiusChange: PropTypes.func,
     onPolyRoundCornerStyleChange: PropTypes.func,
     onPolyRoundLimitRadiusChange: PropTypes.func,
+    onPolyRoundShowItemsChange: PropTypes.func,
     onPolyRoundToggleCollapse: PropTypes.func,
+    onPolyRoundSetPoint: PropTypes.func,
+    onPolyRoundRemovePoint: PropTypes.func,
     onPolyRoundClear: PropTypes.func,
     onPolyRoundAddPoint: PropTypes.func,
     onPolyRoundFinish: PropTypes.func,
@@ -1476,6 +1527,7 @@ const mapStateToProps = state => ({
     polyRoundRadiusValue: state.scratchPaint.polyRoundMode.radius,
     polyRoundCornerStyle: state.scratchPaint.polyRoundMode.cornerStyle,
     polyRoundLimitRadius: state.scratchPaint.polyRoundMode.limitRadius,
+    polyRoundShowItems: state.scratchPaint.polyRoundMode.showItems,
     polyRoundCollapse: state.scratchPaint.polyRoundMode.collapsePoints,
     polyRoundRawPoints: state.scratchPaint.polyRoundMode.rawPoints
 });
@@ -1517,11 +1569,11 @@ const mapDispatchToProps = dispatch => ({
     },
     onPolyRoundSetPoint: (index, x, y) => {
         dispatch(editPolyRoundPoint(index, x, y));
-        dispatch(triggerPolyRoundAction('setPoint'));
+        dispatch(triggerPolyRoundAction('setPoint', {index, x, y}));
     },
     onPolyRoundRemovePoint: index => {
         dispatch(removePolyRoundPoint(index));
-        dispatch(triggerPolyRoundAction('removePoint'));
+        dispatch(triggerPolyRoundAction('removePoint', {index}));
     },
     onPolyRoundAddPoint: () => {
         dispatch(triggerPolyRoundAction('addMid'));
@@ -1531,6 +1583,9 @@ const mapDispatchToProps = dispatch => ({
     },
     onPolyRoundFinish: () => {
         dispatch(triggerPolyRoundAction('finish'));
+    },
+    onPolyRoundShowItemsChange: showItems => {
+        dispatch(changePolyRoundShowItems(showItems));
     },
 
     onBitBrushSliderChange: bitBrushSize => {
@@ -1566,27 +1621,6 @@ const mapDispatchToProps = dispatch => ({
     onTextAlignCenter: () => {
         dispatch(setTextAlignment('center'));
     },
-    onPolyRoundRadiusChange: radius => {
-        dispatch(changePolyRoundRadius(radius));
-    },
-    onPolyRoundCornerStyleChange: cornerStyle => {
-        dispatch(changePolyRoundCornerStyle(cornerStyle));
-    },
-    onPolyRoundLimitRadiusChange: limitRadius => {
-        dispatch(changePolyRoundLimitRadius(limitRadius));
-    },
-    onPolyRoundToggleCollapse: () => {
-        dispatch(togglePolyRoundCollapse());
-    },
-    onPolyRoundClear: () => {
-        dispatch(triggerPolyRoundAction('clear'));
-    },
-    onPolyRoundAddPoint: () => {
-        dispatch(triggerPolyRoundAction('addMid'));
-    },
-    onPolyRoundFinish: () => {
-        dispatch(triggerPolyRoundAction('finish'));
-    }
 });
 
 export default connect(
