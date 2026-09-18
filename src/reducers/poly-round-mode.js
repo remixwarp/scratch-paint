@@ -59,7 +59,7 @@ const reducer = function (state, action) {
         // still produce a fresh prop change that the container sees.
         actionCounter += 1;
         return Object.assign({}, state, {
-            pendingAction: {token: actionCounter, name: action.name}
+            pendingAction: Object.assign({token: actionCounter, name: action.name}, action.payload || {})
         });
     case CONSUME_POLY_ROUND_ACTION:
         // Cleared by the container right after handling, so stale values
@@ -91,8 +91,8 @@ const editPolyRoundPoint = function (index, x, y) {
 const removePolyRoundPoint = function (index) {
     return {type: REMOVE_POLY_ROUND_POINT, index};
 };
-const triggerPolyRoundAction = function (name) {
-    return {type: TRIGGER_POLY_ROUND_ACTION, name}; // 'clear' | 'addMid' | 'finish'
+const triggerPolyRoundAction = function (name, payload) {
+    return {type: TRIGGER_POLY_ROUND_ACTION, name, payload};
 };
 const consumePolyRoundAction = function () {
     return {type: CONSUME_POLY_ROUND_ACTION};

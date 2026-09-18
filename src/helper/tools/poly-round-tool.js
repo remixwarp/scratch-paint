@@ -284,10 +284,14 @@ class PolyRoundTool extends paper.Tool {
         this._markers = [];
         this._rawPoints = [];
 
+        // IMPORTANT: clear paper selection FIRST, THEN select the new path,
+        // THEN dispatch Redux's setSelectedItems (which reads paper.selectedItems).
+        // The previous order (select → clearSelection → setSelectedItems) was
+        // broken because clearSelection calls paper.project.deselectAll() which
+        // wiped out our newly-set path.selected.
+        paper.project.deselectAll();
         delete path.data.isPolyRoundLive;
         path.selected = true;
-
-        clearSelection(this.clearSelectedItems);
         this.setSelectedItems();
         this.boundingBoxTool.onSelectionChanged(paper.project.selectedItems);
         this.onUpdateImage();
@@ -300,7 +304,7 @@ class PolyRoundTool extends paper.Tool {
         // Clear existing
         this._markers.forEach(m => m.remove());
         this._markers = [];
-        const dotSize = 10 / paper.view.zoom;  // doubled from 5 for mobile touchability
+        const dotSize = 20 / paper.view.zoom;  // doubled from 5 for mobile touchability
         for (let i = 0; i < this._rawPoints.length; i++) {
             const p = this._rawPoints[i];
             const dot = new paper.Path.Circle({
@@ -403,7 +407,30 @@ class PolyRoundTool extends paper.Tool {
             return;
         }
 
-        // Try bounding-box selection on an already-committed item.
+        // Try bounding-box selection on an already-committed item ONLY —
+        // never try to transform our own live preview, guide, or markers.
+        // We do this by hitting paper directly first; if the hit is on a
+        // live poly-round item, skip bounding-box and go straight to addPoint.
+        const liveHit = paper.project.hitTest(event.point, {
+            tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom,
+            fill: true,
+            stroke: true,
+            segments: true,
+            curves: true,
+            match: hit => hit.item && hit.item.data &&
+                (hit.item.data.isPolyRoundLive || hit.item.data.isPolyRoundGuide)
+        });
+        if (liveHit) {
+            // Clicked on our own live preview → treat as adding a new point,
+            // not bounding-box transform.
+            clearSelection(this.clearSelectedItems);
+            this.isBoundingBoxMode = false;
+            this.addPointAt(event.point);
+            return;
+        }
+
+        // If we already have at least 2 points and click the same spot as a
+        // marker, handleMouseDown above already routed to draggingIndex.
         if (this.boundingBoxTool.onMouseDown(
             event, false, false, false, {
                 segments: true,

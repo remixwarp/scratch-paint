@@ -280,11 +280,11 @@ const mapDispatchToProps = dispatch => ({
     onSetPoint: (index, x, y) => {
         dispatch(editPolyRoundPoint(index, x, y));
         // Also send an imperative action so the tool actually moves the point
-        dispatch(triggerPolyRoundAction('setPoint'));
+        dispatch(triggerPolyRoundAction('setPoint', {index, x, y}));
     },
     onRemovePoint: index => {
         dispatch(removePolyRoundPoint(index));
-        dispatch(triggerPolyRoundAction('removePoint'));
+        dispatch(triggerPolyRoundAction('removePoint', {index}));
     }
 });
 
