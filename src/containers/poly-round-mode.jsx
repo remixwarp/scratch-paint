@@ -89,9 +89,6 @@ class PolyRoundMode extends React.Component {
             this.deactivateTool();
         }
     }
-    shouldComponentUpdate (nextProps) {
-        return nextProps.isPolyRoundModeActive !== this.props.isPolyRoundModeActive;
-    }
     componentWillUnmount () {
         if (this.tool) {
             this.deactivateTool();

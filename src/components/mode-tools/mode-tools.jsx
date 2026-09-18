@@ -235,6 +235,68 @@ const ModeToolsComponent = props => {
             description: 'Label for the button that sets text alignment to the center',
             id: 'pm.paint.modeTools.centerAlign'
         },
+
+        polyRound: {
+            defaultMessage: '圆角多边形',
+            description: 'Label for the rounded polygon tool (used in the left-toolbar tooltip)',
+            id: 'paint.modeTools.polyRound'
+        },
+        polyRoundRadius: {
+            defaultMessage: '圆角半径',
+            description: 'Label for the corner radius slider',
+            id: 'paint.modeTools.polyRoundRadius'
+        },
+        polyRoundCornerStyle: {
+            defaultMessage: '圆角类型',
+            description: 'Label for the corner style dropdown',
+            id: 'paint.modeTools.polyRoundCornerStyle'
+        },
+        polyRoundStyleArc: {
+            defaultMessage: '圆弧',
+            description: 'Label for the arc corner style option',
+            id: 'paint.modeTools.polyRoundStyleArc'
+        },
+        polyRoundStyleBezier: {
+            defaultMessage: '贝塞尔',
+            description: 'Label for the bezier corner style option',
+            id: 'paint.modeTools.polyRoundStyleBezier'
+        },
+        polyRoundLimitRadius: {
+            defaultMessage: '统一半径',
+            description: 'Label for the consistent-radius checkbox',
+            id: 'paint.modeTools.polyRoundLimitRadius'
+        },
+        polyRoundPoints: {
+            defaultMessage: '顶点坐标',
+            description: 'Label for the coordinates card header',
+            id: 'paint.modeTools.polyRoundPoints'
+        },
+        polyRoundAddPoint: {
+            defaultMessage: '加中点',
+            description: 'Tooltip for the add-midpoint button',
+            id: 'paint.modeTools.polyRoundAddPoint'
+        },
+        polyRoundClear: {
+            defaultMessage: '清空',
+            description: 'Label for the clear button',
+            id: 'paint.modeTools.polyRoundClear'
+        },
+        polyRoundDone: {
+            defaultMessage: '完成',
+            description: 'Label for the finish button',
+            id: 'paint.modeTools.polyRoundDone'
+        },
+        polyRoundCollapse: {
+            defaultMessage: '折叠/展开',
+            description: 'Tooltip for the collapse toggle on the point list',
+            id: 'paint.modeTools.polyRoundCollapse'
+        },
+        polyRoundHint: {
+            defaultMessage: '在画板上点击放置顶点；双击、回车或点"完成"生成圆角多边形。',
+            description: 'User-facing hint explaining how to use the rounded polygon tool',
+            id: 'paint.modeTools.polyRoundHint'
+        },
+
         arrowTipResize: {
             defaultMessage: 'Hold Alt + Shift to resize arrow tip',
             description: 'Instruction for resizing arrow tip',
@@ -1197,10 +1259,10 @@ const ModeToolsComponent = props => {
 
         return (
             <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'8px'}}>
-                <div title="Corner Radius">
+                <div title=props.intl.formatMessage(messages.polyRoundRadius)>
                     <img
-                        alt="Corner Radius"
-                        title="Corner Radius"
+                        alt=props.intl.formatMessage(messages.polyRoundRadius)
+                        title=props.intl.formatMessage(messages.polyRoundRadius)
                         className={styles.modeToolsIcon}
                         draggable={false}
                         src={roundedRectIcon}
@@ -1215,32 +1277,32 @@ const ModeToolsComponent = props => {
                     value={currentRadius}
                     onSubmit={props.onPolyRoundRadiusChange}
                 />
-                <label title="Corner Style" style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
-                    <span>"Corner Style"</span>
+                <label title=props.intl.formatMessage(messages.polyRoundCornerStyle) style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                    <span>props.intl.formatMessage(messages.polyRoundCornerStyle)</span>
                     <select
                         value={cornerStyle}
                         onChange={e => props.onPolyRoundCornerStyleChange(e.target.value)}
                         style={{fontSize:'12px', padding:'1px 2px'}}
                     >
-                        <option value="arc">"Arc"</option>
-                        <option value="bezier">"Bezier"</option>
+                        <option value="arc">props.intl.formatMessage(messages.polyRoundStyleArc)</option>
+                        <option value="bezier">props.intl.formatMessage(messages.polyRoundStyleBezier)</option>
                     </select>
                 </label>
-                <label title="Consistent Radius" style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                <label title=props.intl.formatMessage(messages.polyRoundLimitRadius) style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <input
                         type="checkbox"
                         checked={!!limitRadius}
                         onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)}
                     />
-                    <span>"Consistent Radius"</span>
+                    <span>props.intl.formatMessage(messages.polyRoundLimitRadius)</span>
                 </label>
 
                 <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
-                    "Click on the canvas to add points. Finish with double-click, Enter, or Finish."
+                    props.intl.formatMessage(messages.polyRoundHint)
                 </span>
 
                 <div
-                    title="Points"
+                    title=props.intl.formatMessage(messages.polyRoundPoints)
                     style={{
                         border:'1px solid #ccc',
                         borderRadius:'4px',
@@ -1252,26 +1314,26 @@ const ModeToolsComponent = props => {
                     }}
                 >
                     <div style={{display:'flex', gap:'4px', alignItems:'center', justifyContent:'space-between', fontSize:'12px'}}>
-                        <span>"Points" ({rawPoints.length})</span>
+                        <span>props.intl.formatMessage(messages.polyRoundPoints) ({rawPoints.length})</span>
                         <span style={{display:'inline-flex', gap:'2px'}}>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundToggleCollapse}
-                                title="Collapse / Expand"
+                                title=props.intl.formatMessage(messages.polyRoundCollapse)
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >{autoCollapse ? '+' : '-'}</button>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundAddPoint}
-                                title="Add Point"
+                                title=props.intl.formatMessage(messages.polyRoundAddPoint)
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >+</button>
                             <button
                                 type="button"
                                 onClick={props.onPolyRoundClear}
-                                title="Clear"
+                                title=props.intl.formatMessage(messages.polyRoundClear)
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
-                            >"Clear"</button>
+                            >props.intl.formatMessage(messages.polyRoundClear)</button>
                         </span>
                     </div>
                     {!autoCollapse && rawPoints.map(pointRow)}
@@ -1281,9 +1343,9 @@ const ModeToolsComponent = props => {
                     <button
                         type="button"
                         onClick={props.onPolyRoundFinish}
-                        title="Finish"
+                        title=props.intl.formatMessage(messages.polyRoundDone)
                         style={{fontSize:'12px', padding:'2px 8px'}}
-                    >"Finish"</button>
+                    >props.intl.formatMessage(messages.polyRoundDone)</button>
                 )}
             </div>
         );

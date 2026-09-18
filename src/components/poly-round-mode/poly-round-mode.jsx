@@ -13,7 +13,7 @@ import polyRoundIcon from './poly-round.svg';
 // src/lib/messages.js already; we just avoid importing them here.
 const POLY_ROUND_DESCRIPTOR = {
     id: 'paint.polyRoundMode.polyRound',
-    defaultMessage: 'Rounded Polygon'
+    defaultMessage: '圆角多边形'
 };
 
 const PolyRoundModeComponent = props => (
