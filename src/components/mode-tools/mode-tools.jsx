@@ -17,7 +17,11 @@ import {changeSimplifySize as changePenSimplifySize} from '../../reducers/pen-mo
 import {changeRoundedRectCornerSize} from '../../reducers/rounded-rect-mode';
 import {changeRoundedCornerSize} from '../../reducers/rect-mode';
 import {changeTrianglePolyCount, changeTrianglePointCount} from '../../reducers/triangle-mode';
-import {changePolyRoundRadius, changePolyRoundCornerStyle, changePolyRoundLimitRadius, togglePolyRoundCollapse} from '../../reducers/poly-round-mode';
+import {
+    changePolyRoundRadius, changePolyRoundCornerStyle, changePolyRoundLimitRadius,
+    togglePolyRoundCollapse, editPolyRoundPoint, removePolyRoundPoint,
+    triggerPolyRoundAction
+} from '../../reducers/poly-round-mode';
 import {changeCurrentlySelectedShape} from '../../reducers/sussy-mode';
 import {changeBitBrushSize} from '../../reducers/bit-brush-size';
 import {changeBitEraserSize} from '../../reducers/bit-eraser-size';
@@ -1251,9 +1255,29 @@ const ModeToolsComponent = props => {
             >
                 <span style={{minWidth:'18px', color:'#888'}}>{idx+1}</span>
                 <span>x</span>
-                <span style={{minWidth:'42px', color:'#1976d2'}}>{pt.x.toFixed(1)}</span>
+                <input
+                    type="number"
+                    step="0.1"
+                    value={Number(pt.x.toFixed(1))}
+                    onBlur={e => props.onPolyRoundSetPoint(idx, Number(e.target.value) || 0, pt.y)}
+                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace'}}
+                />
                 <span>y</span>
-                <span style={{minWidth:'42px', color:'#1976d2'}}>{pt.y.toFixed(1)}</span>
+                <input
+                    type="number"
+                    step="0.1"
+                    value={Number(pt.y.toFixed(1))}
+                    onBlur={e => props.onPolyRoundSetPoint(idx, pt.x, Number(e.target.value) || 0)}
+                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                    style={{width:'52px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace'}}
+                />
+                <button
+                    type="button"
+                    onClick={() => props.onPolyRoundRemovePoint(idx)}
+                    title="Delete vertex"
+                    style={{fontSize:'10px', padding:'0 3px', lineHeight:'14px', color:'#fff', background:'#e94560', border:'none', borderRadius:'2px', cursor:'pointer'}}
+                >×</button>
             </div>
         );
 
@@ -1298,7 +1322,7 @@ const ModeToolsComponent = props => {
                 </label>
 
                 <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
-                    props.intl.formatMessage(messages.polyRoundHint)
+                    {props.intl.formatMessage(messages.polyRoundHint)}
                 </span>
 
                 <div
@@ -1446,7 +1470,14 @@ const mapStateToProps = state => ({
     roundedCornerValue: state.scratchPaint.rectMode.roundedCornerSize,
     trianglePolyValue: state.scratchPaint.triangleMode.trianglePolyCount,
     trianglePointValue: state.scratchPaint.triangleMode.trianglePointCount,
-    currentlySelectedShape: state.scratchPaint.sussyMode.shape
+    currentlySelectedShape: state.scratchPaint.sussyMode.shape,
+
+    // Poly-round tool
+    polyRoundRadiusValue: state.scratchPaint.polyRoundMode.radius,
+    polyRoundCornerStyle: state.scratchPaint.polyRoundMode.cornerStyle,
+    polyRoundLimitRadius: state.scratchPaint.polyRoundMode.limitRadius,
+    polyRoundCollapse: state.scratchPaint.polyRoundMode.collapsePoints,
+    polyRoundRawPoints: state.scratchPaint.polyRoundMode.rawPoints
 });
 const mapDispatchToProps = dispatch => ({
     onBrushSliderChange: brushSize => {
@@ -1470,6 +1501,38 @@ const mapDispatchToProps = dispatch => ({
     onCurrentlySelectedShapeChange: shape => {
         dispatch(changeCurrentlySelectedShape(shape));
     },
+
+    // Poly-round tool
+    onPolyRoundRadiusChange: radius => {
+        dispatch(changePolyRoundRadius(radius));
+    },
+    onPolyRoundCornerStyleChange: style => {
+        dispatch(changePolyRoundCornerStyle(style));
+    },
+    onPolyRoundLimitRadiusChange: limit => {
+        dispatch(changePolyRoundLimitRadius(limit));
+    },
+    onPolyRoundToggleCollapse: () => {
+        dispatch(togglePolyRoundCollapse());
+    },
+    onPolyRoundSetPoint: (index, x, y) => {
+        dispatch(editPolyRoundPoint(index, x, y));
+        dispatch(triggerPolyRoundAction('setPoint'));
+    },
+    onPolyRoundRemovePoint: index => {
+        dispatch(removePolyRoundPoint(index));
+        dispatch(triggerPolyRoundAction('removePoint'));
+    },
+    onPolyRoundAddPoint: () => {
+        dispatch(triggerPolyRoundAction('addMid'));
+    },
+    onPolyRoundClear: () => {
+        dispatch(triggerPolyRoundAction('clear'));
+    },
+    onPolyRoundFinish: () => {
+        dispatch(triggerPolyRoundAction('finish'));
+    },
+
     onBitBrushSliderChange: bitBrushSize => {
         dispatch(changeBitBrushSize(bitBrushSize));
     },

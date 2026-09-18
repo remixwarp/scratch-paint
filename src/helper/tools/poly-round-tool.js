@@ -229,12 +229,50 @@ class PolyRoundTool extends paper.Tool {
     }
 
     /**
+     * Move a specific raw vertex to a new coordinate (called from the top
+     * toolbar point-list inputs).
+     * @param {number} index vertex index
+     * @param {number} x new x
+     * @param {number} y new y
+     */
+    setPointAt (index, x, y) {
+        if (index < 0 || index >= this._rawPoints.length) return;
+        const p = this._rawPoints[index];
+        p.set(x, y);
+        const m = this._markers[index];
+        if (m) m.position = p.clone();
+        this._regeneratePreview();
+        this._emitPointsChanged();
+    }
+
+    /**
+     * Remove a specific raw vertex (called from the point-list delete button).
+     * @param {number} index
+     */
+    removePoint (index) {
+        if (index < 0 || index >= this._rawPoints.length) return;
+        const marker = this._markers.splice(index, 1)[0];
+        if (marker) marker.remove();
+        this._rawPoints.splice(index, 1);
+        // Re-tag marker indices so drag-hit-test still works
+        this._markers.forEach((m, i) => { m.data.index = i; });
+        this._regeneratePreview();
+        this._emitPointsChanged();
+    }
+
+    /**
      * Commit the live rounded shape into the document as a regular selected
      * item, then let the usual undo pipeline record it.
      * @returns {boolean} true if something was committed
      */
     finish () {
         if (!this._preview) return false;
+
+        // The preview Path is already on project.activeLayer (we never
+        // remove it during live editing — see _regeneratePreview). Just
+        // strip our internal flags, clean up markers/guide, select it,
+        // and fire the standard scratch-paint update pipeline so the
+        // shape becomes a first-class committed item.
         const path = this._preview;
         this._preview = null;
 
@@ -246,7 +284,6 @@ class PolyRoundTool extends paper.Tool {
         this._markers = [];
         this._rawPoints = [];
 
-        // Strip our internal marker flag so this becomes a normal path.
         delete path.data.isPolyRoundLive;
         path.selected = true;
 
@@ -263,7 +300,7 @@ class PolyRoundTool extends paper.Tool {
         // Clear existing
         this._markers.forEach(m => m.remove());
         this._markers = [];
-        const dotSize = 5 / paper.view.zoom;
+        const dotSize = 10 / paper.view.zoom;  // doubled from 5 for mobile touchability
         for (let i = 0; i < this._rawPoints.length; i++) {
             const p = this._rawPoints[i];
             const dot = new paper.Path.Circle({
@@ -319,7 +356,6 @@ class PolyRoundTool extends paper.Tool {
             styleShape(rounded, this.colorState);
             this._preview = rounded;
         }
-        rounded.remove();
 
         this._ensureGuide();
         this._guide.removeSegments();

@@ -5,6 +5,8 @@ const CHANGE_POLY_ROUND_CORNER_STYLE = 'scratch-paint/poly-round-mode/CHANGE_COR
 const CHANGE_POLY_ROUND_LIMIT_RADIUS = 'scratch-paint/poly-round-mode/CHANGE_LIMIT_RADIUS';
 const TOGGLE_POLY_ROUND_COLLAPSE = 'scratch-paint/poly-round-mode/TOGGLE_COLLAPSE';
 const SET_POLY_ROUND_POINTS = 'scratch-paint/poly-round-mode/SET_POINTS';
+const EDIT_POLY_ROUND_POINT = 'scratch-paint/poly-round-mode/EDIT_POINT';
+const REMOVE_POLY_ROUND_POINT = 'scratch-paint/poly-round-mode/REMOVE_POINT';
 const TRIGGER_POLY_ROUND_ACTION = 'scratch-paint/poly-round-mode/TRIGGER_ACTION';
 const CONSUME_POLY_ROUND_ACTION = 'scratch-paint/poly-round-mode/CONSUME_ACTION';
 
@@ -40,6 +42,18 @@ const reducer = function (state, action) {
         return Object.assign({}, state, {collapsePoints: !state.collapsePoints});
     case SET_POLY_ROUND_POINTS:
         return Object.assign({}, state, {rawPoints: Array.isArray(action.points) ? action.points.slice() : []});
+    case EDIT_POLY_ROUND_POINT: {
+        const pts = state.rawPoints.slice();
+        if (action.index < 0 || action.index >= pts.length) return state;
+        pts[action.index] = {x: action.x, y: action.y};
+        return Object.assign({}, state, {rawPoints: pts});
+    }
+    case REMOVE_POLY_ROUND_POINT: {
+        const pts = state.rawPoints.slice();
+        if (action.index < 0 || action.index >= pts.length) return state;
+        pts.splice(action.index, 1);
+        return Object.assign({}, state, {rawPoints: pts});
+    }
     case TRIGGER_POLY_ROUND_ACTION:
         // Stash with a unique token so repeated clicks of the same button
         // still produce a fresh prop change that the container sees.
@@ -71,6 +85,12 @@ const togglePolyRoundCollapse = function () {
 const setPolyRoundPoints = function (points) {
     return {type: SET_POLY_ROUND_POINTS, points};
 };
+const editPolyRoundPoint = function (index, x, y) {
+    return {type: EDIT_POLY_ROUND_POINT, index, x, y};
+};
+const removePolyRoundPoint = function (index) {
+    return {type: REMOVE_POLY_ROUND_POINT, index};
+};
 const triggerPolyRoundAction = function (name) {
     return {type: TRIGGER_POLY_ROUND_ACTION, name}; // 'clear' | 'addMid' | 'finish'
 };
@@ -85,6 +105,8 @@ export {
     changePolyRoundLimitRadius,
     togglePolyRoundCollapse,
     setPolyRoundPoints,
+    editPolyRoundPoint,
+    removePolyRoundPoint,
     triggerPolyRoundAction,
     consumePolyRoundAction
 };

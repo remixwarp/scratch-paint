@@ -18,6 +18,8 @@ import {
     changePolyRoundCornerStyle,
     changePolyRoundLimitRadius,
     setPolyRoundPoints,
+    editPolyRoundPoint,
+    removePolyRoundPoint,
     triggerPolyRoundAction,
     consumePolyRoundAction
 } from '../reducers/poly-round-mode';
@@ -33,7 +35,9 @@ class PolyRoundMode extends React.Component {
             'activateTool',
             'deactivateTool',
             'validateColorState',
-            'handlePointsChanged'
+            'handlePointsChanged',
+            'handleSetPoint',
+            'handleRemovePoint'
         ]);
     }
     componentDidMount () {
@@ -75,6 +79,10 @@ class PolyRoundMode extends React.Component {
                     }
                 } else if (name === 'finish') {
                     this.tool.finish();
+                } else if (name === 'setPoint') {
+                    this.tool.setPointAt(pending.index, pending.x, pending.y);
+                } else if (name === 'removePoint') {
+                    this.tool.removePoint(pending.index);
                 }
                 // Acknowledge so stale values don't replay
                 if (typeof this.props.onConsumeAction === 'function') {
@@ -169,6 +177,16 @@ class PolyRoundMode extends React.Component {
     handlePointsChanged (pts) {
         this.props.onSyncPoints(pts);
     }
+    handleSetPoint (index, x, y) {
+        if (this.tool) {
+            this.tool.setPointAt(index, x, y);
+        }
+    }
+    handleRemovePoint (index) {
+        if (this.tool) {
+            this.tool.removePoint(index);
+        }
+    }
 
     render () {
         return (
@@ -202,6 +220,8 @@ PolyRoundMode.propTypes = {
     onUpdateImage: PropTypes.func.isRequired,
     pendingAction: PropTypes.shape({token: PropTypes.number, name: PropTypes.string}),
     onConsumeAction: PropTypes.func,
+    onSetPoint: PropTypes.func.isRequired,
+    onRemovePoint: PropTypes.func.isRequired,
     radius: PropTypes.number.isRequired,
     selectedItems: PropTypes.arrayOf(PropTypes.instanceOf(paper.Item)),
     setCursor: PropTypes.func.isRequired,
@@ -256,6 +276,15 @@ const mapDispatchToProps = dispatch => ({
     },
     onConsumeAction: () => {
         dispatch(consumePolyRoundAction());
+    },
+    onSetPoint: (index, x, y) => {
+        dispatch(editPolyRoundPoint(index, x, y));
+        // Also send an imperative action so the tool actually moves the point
+        dispatch(triggerPolyRoundAction('setPoint'));
+    },
+    onRemovePoint: index => {
+        dispatch(removePolyRoundPoint(index));
+        dispatch(triggerPolyRoundAction('removePoint'));
     }
 });
 
