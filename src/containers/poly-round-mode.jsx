@@ -18,6 +18,7 @@ import {
     changePolyRoundCornerStyle,
     changePolyRoundLimitRadius,
     changePolyRoundShowItems,
+    changePolyRoundGeometryVariant,
     setPolyRoundPoints,
     editPolyRoundPoint,
     removePolyRoundPoint,
@@ -58,6 +59,9 @@ class PolyRoundMode extends React.Component {
             }
             if (nextProps.limitRadius !== this.props.limitRadius) {
                 this.tool.setLimitRadius(nextProps.limitRadius);
+            }
+            if (nextProps.geometryVariant !== this.props.geometryVariant) {
+                this.tool.setGeometryVariant(nextProps.geometryVariant);
             }
             if (nextProps.showItems !== this.props.showItems) {
                 this.tool.setShowItems(nextProps.showItems);
@@ -111,6 +115,7 @@ class PolyRoundMode extends React.Component {
         this.tool.setRadius(this.props.radius);
         this.tool.setCornerStyle(this.props.cornerStyle);
         this.tool.setLimitRadius(this.props.limitRadius);
+        this.tool.setGeometryVariant(this.props.geometryVariant);
         this.tool.setShowItems(this.props.showItems);
         this.tool.setColorState(this.props.colorState);
         this.tool.activate();
@@ -188,6 +193,7 @@ PolyRoundMode.propTypes = {
     handleMouseDown: PropTypes.func.isRequired,
     isPolyRoundModeActive: PropTypes.bool.isRequired,
     limitRadius: PropTypes.bool.isRequired,
+    geometryVariant: PropTypes.string.isRequired,
     onChangeFillColor: PropTypes.func.isRequired,
     onChangeStrokeColor: PropTypes.func.isRequired,
     onChangeRadius: PropTypes.func.isRequired,
@@ -215,6 +221,7 @@ const mapStateToProps = state => ({
     cornerStyle: state.scratchPaint.polyRoundMode.cornerStyle,
     limitRadius: state.scratchPaint.polyRoundMode.limitRadius,
     showItems: state.scratchPaint.polyRoundMode.showItems,
+    geometryVariant: state.scratchPaint.polyRoundMode.geometryVariant,
     pendingAction: state.scratchPaint.polyRoundMode.pendingAction
 });
 const mapDispatchToProps = dispatch => ({
@@ -232,6 +239,7 @@ const mapDispatchToProps = dispatch => ({
     onChangeCornerStyle: cornerStyle => { dispatch(changePolyRoundCornerStyle(cornerStyle)); },
     onChangeLimitRadius: limitRadius => { dispatch(changePolyRoundLimitRadius(limitRadius)); },
     onChangeShowItems: showItems => { dispatch(changePolyRoundShowItems(showItems)); },
+    onChangeGeometryVariant: v => { dispatch(changePolyRoundGeometryVariant(v)); },
     onSyncPoints: points => { dispatch(setPolyRoundPoints(points)); },
     onConsumeAction: () => { dispatch(consumePolyRoundAction()); },
     onSetPoint: (index, x, y) => {

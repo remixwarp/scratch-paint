@@ -27,7 +27,8 @@ import NudgeTool from '../selection-tools/nudge-tool';
  * @param {string} cornerStyle 'arc' (rounded corner) or 'bezier' (quadratic through vertex)
  * @returns {?paper.Path} closed rounded path, single flat Path, or null if degenerate
  */
-function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
+function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle, geometryVariant) {
+    geometryVariant = geometryVariant || 'arc-default';
     if (!rawPoints || rawPoints.length < 2) return null;
 
     // 2 vertices — just an open line between them, no rounding
@@ -55,12 +56,13 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
         let angle = Math.atan2(v2.y, v2.x) - Math.atan2(v1.y, v1.x);
         angle = Math.PI - angle;
         angle = (angle + 2 * Math.PI) % (2 * Math.PI);
-        // paper.Path.arcTo(through, to, radius, clockwise, largeArc)
-        // clockwise = true means sweep from through→to goes clockwise
-        // SVG sweep (screen-coord CW) vs paper clockwise (math-coord CW) are opposites:
-        // PolyGoneRound uses sweep = angle>PI ? 0 : 1 (1=screen CW)
-        // paper clockwise=true = math CW = screen CCW → flip: paper_clockwise = (svg_sweep===0)
-        const clockwise = angle <= Math.PI;
+        // Candidate clockwise flags to try. Paper.js docs say clockwise=true
+        // means sweep along the smaller directed angle FROM through TO.
+        // We test BOTH because the exact relationship with SVG sweep=0/1 is
+        // subtle (paper interprets it via directed-angle in screen coords).
+        const cw_default    = angle <= Math.PI;   // convex→true, concave→false
+        const cw_inverted   = angle >  Math.PI;   // flip
+        const clockwise = cw_default; // default; variant selects at draw time
 
         let l = radius / Math.abs(Math.tan(angle / 2 || 1e-9));
         let r = radius;
@@ -70,7 +72,7 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
             r = half * Math.abs(Math.tan(angle / 2 || 1e-9));
         }
 
-        return {p, u1, u2, angle, clockwise, r, l, len1, len2};
+        return {p, u1, u2, angle, cw_default, cw_inverted, clockwise: cw_default, r, l, len1, len2};
     });
 
     // Degenerate fallback (coincident vertices) — straight polygon
@@ -104,16 +106,30 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
         // Ending tangent point (arc/bezier lands here)
         const tOut = cur.p.add(cur.u2.multiply(cur.l));
 
-        if (cornerStyle === 'bezier') {
-            // Quadratic curve with vertex as control point
+        // geometryVariant controls which corner construction we try.
+        // This is a debug aid — once one variant is confirmed correct,
+        // we'll bake only that one in and drop the others.
+        const variant = geometryVariant;
+        if (variant === 'bezier') {
+            // Full quadratic corner (PolyGoneRound's bezier style, ignoring arcTo entirely)
             path.quadraticCurveTo(cur.p, tOut);
+        } else if (variant === 'line') {
+            // Straight corner — diagnostic only
+            path.lineTo(tOut);
         } else if (cur.r > 1e-4 && cur.l > 1e-4) {
-            // Rounded arc. paper.Path.arcTo signature:
-            //   arcTo(through: Point, to: Point, radius: Number, clockwise?: Boolean, largeArc?: Boolean)
-            // through = the vertex (corner), to = tOut (tangent point on next edge)
-            path.arcTo(cur.p, tOut, cur.r, cur.clockwise, false /* largeArc always false for clamped radii */);
+            // arcTo variants — differ only in the clockwise flag (and arg order)
+            let cw;
+            if (variant === 'arc-inverted') cw = cur.cw_inverted;
+            else cw = cur.cw_default;         // arc-default + arc-swap-args both use default cw
+            if (variant === 'arc-swap-args') {
+                // Swap through/to — paper.arcTo(through, to, ...) means:
+                //   tangent direction = from point-before-us to 'through'
+                //   so swapping them swaps the assumed entering edge.
+                path.arcTo(tOut, cur.p, cur.r, cw, false);
+            } else {
+                path.arcTo(cur.p, tOut, cur.r, cw, false);
+            }
         } else {
-            // Straight corner (radius clamped to 0)
             path.lineTo(tOut);
         }
     }
@@ -176,6 +192,11 @@ class PolyRoundTool extends paper.Tool {
     setRadius (r) { this.radius = Math.max(0, r); this._regeneratePreview(); }
     setCornerStyle (s) { this.cornerStyle = s; this._regeneratePreview(); }
     setLimitRadius (b) { this.limitRadius = !!b; this._regeneratePreview(); }
+    setGeometryVariant (v) {
+        const valid = ['arc-default', 'arc-inverted', 'arc-swap-args', 'bezier', 'line'];
+        this.geometryVariant = valid.includes(v) ? v : 'arc-default';
+        this._regeneratePreview();
+    }
     setShowItems (s) { this.showItems = s; this._applyVisibility(); }
 
     onSelectionChanged (sels) { if (this.boundingBoxTool) this.boundingBoxTool.onSelectionChanged(sels); }
@@ -317,7 +338,7 @@ class PolyRoundTool extends paper.Tool {
             return;
         }
         const rounded = buildRoundedPath(
-            this._rawPoints, this.radius, this.limitRadius, this.cornerStyle
+            this._rawPoints, this.radius, this.limitRadius, this.cornerStyle, this.geometryVariant || 'arc-default'
         );
         if (!rounded) return;
 
