@@ -19,7 +19,7 @@ import {changeRoundedCornerSize} from '../../reducers/rect-mode';
 import {changeTrianglePolyCount, changeTrianglePointCount} from '../../reducers/triangle-mode';
 import {
     changePolyRoundRadius, changePolyRoundCornerStyle, changePolyRoundLimitRadius,
-    changePolyRoundShowItems, changePolyRoundGeometryVariant,
+    changePolyRoundShowItems,
     togglePolyRoundCollapse, editPolyRoundPoint, removePolyRoundPoint,
     triggerPolyRoundAction
 } from '../../reducers/poly-round-mode';
@@ -1268,7 +1268,6 @@ const ModeToolsComponent = props => {
         const currentRadius = props.polyRoundRadiusValue;
         const cornerStyle = props.polyRoundCornerStyle;
         const limitRadius = props.polyRoundLimitRadius;
-        const geometryVariant = props.polyRoundGeometryVariant || 'arc-default';
         const showItems = props.polyRoundShowItems || 'both';
         const collapse = props.polyRoundCollapse;
         const rawPoints = props.polyRoundRawPoints || [];
@@ -1340,18 +1339,6 @@ const ModeToolsComponent = props => {
                     <input type="checkbox" checked={!!limitRadius}
                         onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)} />
                     <span>{props.intl.formatMessage(messages.polyRoundLimitRadius)}</span>
-                </label>
-                <label title="Corner variant (debug)" style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
-                    <span style={{color:'#c0392b'}}>Corner variant (debug)</span>
-                    <select value={geometryVariant}
-                        onChange={e => props.onPolyRoundGeometryVariantChange(e.target.value)}
-                        style={{fontSize:'11px', padding:'1px 2px'}}>
-                        <option value="arc-default">arc-default (cw=angle≤π)</option>
-                        <option value="arc-inverted">arc-inverted (cw=angle>π)</option>
-                        <option value="arc-swap-args">arc-swap-args (swap through/to)</option>
-                        <option value="bezier">bezier (no arcTo)</option>
-                        <option value="line">line (diagnostic — no rounding)</option>
-                    </select>
                 </label>
                 <label title={props.intl.formatMessage(messages.polyRoundShowItems)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
                     <span>{props.intl.formatMessage(messages.polyRoundShowItems)}</span>
@@ -1459,14 +1446,12 @@ ModeToolsComponent.propTypes = {
     polyRoundCornerStyle: PropTypes.string,
     polyRoundLimitRadius: PropTypes.bool,
     polyRoundShowItems: PropTypes.string,
-    polyRoundGeometryVariant: PropTypes.string,
     polyRoundCollapse: PropTypes.bool,
     polyRoundRawPoints: PropTypes.array,
     onPolyRoundRadiusChange: PropTypes.func,
     onPolyRoundCornerStyleChange: PropTypes.func,
     onPolyRoundLimitRadiusChange: PropTypes.func,
     onPolyRoundShowItemsChange: PropTypes.func,
-    onPolyRoundGeometryVariantChange: PropTypes.func,
     onPolyRoundToggleCollapse: PropTypes.func,
     onPolyRoundSetPoint: PropTypes.func,
     onPolyRoundRemovePoint: PropTypes.func,
@@ -1531,7 +1516,6 @@ const mapStateToProps = state => ({
     polyRoundCornerStyle: state.scratchPaint.polyRoundMode.cornerStyle,
     polyRoundLimitRadius: state.scratchPaint.polyRoundMode.limitRadius,
     polyRoundShowItems: state.scratchPaint.polyRoundMode.showItems,
-    polyRoundGeometryVariant: state.scratchPaint.polyRoundMode.geometryVariant,
     polyRoundCollapse: state.scratchPaint.polyRoundMode.collapsePoints,
     polyRoundRawPoints: state.scratchPaint.polyRoundMode.rawPoints
 });
@@ -1567,9 +1551,6 @@ const mapDispatchToProps = dispatch => ({
     },
     onPolyRoundLimitRadiusChange: limit => {
         dispatch(changePolyRoundLimitRadius(limit));
-    },
-    onPolyRoundGeometryVariantChange: v => {
-        dispatch(changePolyRoundGeometryVariant(v));
     },
     onPolyRoundToggleCollapse: () => {
         dispatch(togglePolyRoundCollapse());

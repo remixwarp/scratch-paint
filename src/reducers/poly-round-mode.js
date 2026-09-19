@@ -4,7 +4,6 @@ const CHANGE_POLY_ROUND_RADIUS = 'scratch-paint/poly-round-mode/CHANGE_RADIUS';
 const CHANGE_POLY_ROUND_CORNER_STYLE = 'scratch-paint/poly-round-mode/CHANGE_CORNER_STYLE';
 const CHANGE_POLY_ROUND_LIMIT_RADIUS = 'scratch-paint/poly-round-mode/CHANGE_LIMIT_RADIUS';
 const CHANGE_POLY_ROUND_SHOW_ITEMS = 'scratch-paint/poly-round-mode/CHANGE_SHOW_ITEMS';
-const CHANGE_POLY_ROUND_GEOMETRY_VARIANT = 'scratch-paint/poly-round-mode/CHANGE_GEOMETRY_VARIANT';
 const TOGGLE_POLY_ROUND_COLLAPSE = 'scratch-paint/poly-round-mode/TOGGLE_COLLAPSE';
 const SET_POLY_ROUND_POINTS = 'scratch-paint/poly-round-mode/SET_POINTS';
 const EDIT_POLY_ROUND_POINT = 'scratch-paint/poly-round-mode/EDIT_POINT';
@@ -19,7 +18,6 @@ const initialState = {
     cornerStyle: 'arc',
     limitRadius: false,
     showItems: 'both',  // 'both' | 'markers' | 'guide' | 'none'
-    geometryVariant: 'arc-default',  // debug: arc-default / arc-inverted / arc-swap-args / bezier / line
     collapsePoints: false,
     rawPoints: [],
     pendingAction: null    // {token, name, ...payload}
@@ -49,14 +47,6 @@ const reducer = function (state, action) {
             return state;
         }
         return Object.assign({}, state, {showItems: action.showItems});
-    }
-    case CHANGE_POLY_ROUND_GEOMETRY_VARIANT: {
-        const valid = ['arc-default', 'arc-inverted', 'arc-swap-args', 'bezier', 'line'];
-        if (!valid.includes(action.geometryVariant)) {
-            log.warn(`Invalid poly-round geometryVariant: ${action.geometryVariant}`);
-            return state;
-        }
-        return Object.assign({}, state, {geometryVariant: action.geometryVariant});
     }
     case TOGGLE_POLY_ROUND_COLLAPSE:
         return Object.assign({}, state, {collapsePoints: !state.collapsePoints});
@@ -98,9 +88,6 @@ const changePolyRoundLimitRadius = function (limitRadius) {
 const changePolyRoundShowItems = function (showItems) {
     return {type: CHANGE_POLY_ROUND_SHOW_ITEMS, showItems};
 };
-const changePolyRoundGeometryVariant = function (geometryVariant) {
-    return {type: CHANGE_POLY_ROUND_GEOMETRY_VARIANT, geometryVariant};
-};
 const togglePolyRoundCollapse = function () {
     return {type: TOGGLE_POLY_ROUND_COLLAPSE};
 };
@@ -126,7 +113,6 @@ export {
     changePolyRoundCornerStyle,
     changePolyRoundLimitRadius,
     changePolyRoundShowItems,
-    changePolyRoundGeometryVariant,
     togglePolyRoundCollapse,
     setPolyRoundPoints,
     editPolyRoundPoint,

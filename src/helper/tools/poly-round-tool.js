@@ -27,8 +27,7 @@ import NudgeTool from '../selection-tools/nudge-tool';
  * @param {string} cornerStyle 'arc' (rounded corner) or 'bezier' (quadratic through vertex)
  * @returns {?paper.Path} closed rounded path, single flat Path, or null if degenerate
  */
-function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle, geometryVariant) {
-    geometryVariant = geometryVariant || 'arc-default';
+function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
     if (!rawPoints || rawPoints.length < 2) return null;
 
     // 2 vertices — just an open line between them, no rounding
@@ -56,13 +55,9 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle, geometry
         let angle = Math.atan2(v2.y, v2.x) - Math.atan2(v1.y, v1.x);
         angle = Math.PI - angle;
         angle = (angle + 2 * Math.PI) % (2 * Math.PI);
-        // Candidate clockwise flags to try. Paper.js docs say clockwise=true
-        // means sweep along the smaller directed angle FROM through TO.
-        // We test BOTH because the exact relationship with SVG sweep=0/1 is
-        // subtle (paper interprets it via directed-angle in screen coords).
-        const cw_default    = angle <= Math.PI;   // convex→true, concave→false
-        const cw_inverted   = angle >  Math.PI;   // flip
-        const clockwise = cw_default; // default; variant selects at draw time
+        // sweepSign: +1 for convex (angle <= PI), -1 for concave (angle > PI).
+        // Controls which direction the corner "bulges" along the normal bisector.
+        const sweepSign = angle <= Math.PI ? 1 : -1;
 
         let l = radius / Math.abs(Math.tan(angle / 2 || 1e-9));
         let r = radius;
@@ -72,7 +67,7 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle, geometry
             r = half * Math.abs(Math.tan(angle / 2 || 1e-9));
         }
 
-        return {p, u1, u2, angle, cw_default, cw_inverted, clockwise: cw_default, r, l, len1, len2};
+        return {p, u1, u2, angle, sweepSign, r, l, len1, len2};
     });
 
     // Degenerate fallback (coincident vertices) — straight polygon
@@ -106,28 +101,55 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle, geometry
         // Ending tangent point (arc/bezier lands here)
         const tOut = cur.p.add(cur.u2.multiply(cur.l));
 
-        // geometryVariant controls which corner construction we try.
-        // This is a debug aid — once one variant is confirmed correct,
-        // we'll bake only that one in and drop the others.
-        const variant = geometryVariant;
-        if (variant === 'bezier') {
-            // Full quadratic corner (PolyGoneRound's bezier style, ignoring arcTo entirely)
-            path.quadraticCurveTo(cur.p, tOut);
-        } else if (variant === 'line') {
-            // Straight corner — diagnostic only
-            path.lineTo(tOut);
-        } else if (cur.r > 1e-4 && cur.l > 1e-4) {
-            // arcTo variants — differ only in the clockwise flag (and arg order)
-            let cw;
-            if (variant === 'arc-inverted') cw = cur.cw_inverted;
-            else cw = cur.cw_default;         // arc-default + arc-swap-args both use default cw
-            if (variant === 'arc-swap-args') {
-                // Swap through/to — paper.arcTo(through, to, ...) means:
-                //   tangent direction = from point-before-us to 'through'
-                //   so swapping them swaps the assumed entering edge.
-                path.arcTo(tOut, cur.p, cur.r, cw, false);
+        // Turbowarp's paper.js arcTo has unreliable clockwise semantics;
+        // arc corners are implemented with a cubic Bezier approximation
+        // of a circular arc, which matches PolyGoneRound's SVG 'A r r' output.
+        // The quadratic variant is PolyGoneRound's original bezier style.
+        if (cur.r > 1e-4 && cur.l > 1e-4) {
+            if (cornerStyle === 'bezier') {
+                // PolyGoneRound bezier: Q vertex, tOut  (single quadratic)
+                path.quadraticCurveTo(cur.p, tOut);
             } else {
-                path.arcTo(cur.p, tOut, cur.r, cw, false);
+                // Cubic approximation of a circular arc from tIn to tOut
+                // passing distance r from cur.p along the bisector.
+                //
+                // Construction:
+                //   normal      = rotate(tOut - tIn) by sweepSign * 90°
+                //                 (points into the polygon interior for convex,
+                //                  outward for concave — flips bulge direction)
+                //   center      = midpoint(tIn,tOut) + normal * r
+                //   control pts = start - (start-center)*k  ...  where k = 4/3*tan(arcAngle/4)
+                //   end         = tOut
+                //
+                // For a right-angle arc (angle = PI/2), k = 4/3*tan(PI/8) ≈ 0.5522.
+                const tIn = cur.p.subtract(cur.u1.multiply(cur.l));
+                const delta = tOut.subtract(tIn);
+                const mid = tIn.add(delta.divide(2));
+                // normal pointing perpendicular to (tOut - tIn), sign flips
+                // so convex corners bulge INTO the polygon
+                const normal = new paper.Point(-delta.y, delta.x).multiply(cur.sweepSign);
+                const normalLen = normal.length || 1;
+                const unitNormal = normal.normalize();
+                const center = mid.add(unitNormal.multiply(cur.r));
+
+                // arc from start to end around center; sweep angle = 2*(angle/2) = angle
+                // We use absolute r; actual arc angular span is angle (both for convex and concave,
+                // but direction is encoded by sweepSign which also normal-flips the normal).
+                const startToCenter = tIn.subtract(center);
+                const endToCenter   = tOut.subtract(center);
+
+                // k = 4/3 * tan(theta/4) where theta = 2 * angle/2 = angle
+                const theta = cur.angle;
+                const k = 4 / 3 * Math.tan(theta / 4 || 1e-9);
+
+                // Control points offset tangentially from start and end
+                // tangent at start is (cur.p - tIn) direction (same as u1)
+                // tangent at end   is (tOut - cur.p) direction (same as u2)
+                // Both point outward from the arc, so we subtract them
+                const cp1 = tIn.add(cur.u1.multiply(cur.l * k));
+                const cp2 = tOut.subtract(cur.u2.multiply(cur.l * k));
+
+                path.cubicCurveTo(cp1, cp2, tOut);
             }
         } else {
             path.lineTo(tOut);
@@ -192,11 +214,6 @@ class PolyRoundTool extends paper.Tool {
     setRadius (r) { this.radius = Math.max(0, r); this._regeneratePreview(); }
     setCornerStyle (s) { this.cornerStyle = s; this._regeneratePreview(); }
     setLimitRadius (b) { this.limitRadius = !!b; this._regeneratePreview(); }
-    setGeometryVariant (v) {
-        const valid = ['arc-default', 'arc-inverted', 'arc-swap-args', 'bezier', 'line'];
-        this.geometryVariant = valid.includes(v) ? v : 'arc-default';
-        this._regeneratePreview();
-    }
     setShowItems (s) { this.showItems = s; this._applyVisibility(); }
 
     onSelectionChanged (sels) { if (this.boundingBoxTool) this.boundingBoxTool.onSelectionChanged(sels); }
@@ -338,7 +355,7 @@ class PolyRoundTool extends paper.Tool {
             return;
         }
         const rounded = buildRoundedPath(
-            this._rawPoints, this.radius, this.limitRadius, this.cornerStyle, this.geometryVariant || 'arc-default'
+            this._rawPoints, this.radius, this.limitRadius, this.cornerStyle
         );
         if (!rounded) return;
 
