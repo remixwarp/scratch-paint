@@ -1341,8 +1341,8 @@ const ModeToolsComponent = props => {
                         onChange={e => props.onPolyRoundLimitRadiusChange(e.target.checked)} />
                     <span>{props.intl.formatMessage(messages.polyRoundLimitRadius)}</span>
                 </label>
-                <label title={props.intl.formatMessage(messages.polyRoundGeometryVariant)} style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
-                    <span style={{color:'#c0392b'}}>{props.intl.formatMessage(messages.polyRoundGeometryVariant)}</span>
+                <label title="Corner variant (debug)" style={{display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px'}}>
+                    <span style={{color:'#c0392b'}}>Corner variant (debug)</span>
                     <select value={geometryVariant}
                         onChange={e => props.onPolyRoundGeometryVariantChange(e.target.value)}
                         style={{fontSize:'11px', padding:'1px 2px'}}>
