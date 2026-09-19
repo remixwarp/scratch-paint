@@ -19,7 +19,7 @@ const initialState = {
     cornerStyle: 'arc',
     limitRadius: false,
     showItems: 'both',  // 'both' | 'markers' | 'guide' | 'none'
-    geometryVariant: 'arc-default'  // debug: arc-default / arc-inverted / arc-swap-args / bezier / line
+    geometryVariant: 'arc-default',  // debug: arc-default / arc-inverted / arc-swap-args / bezier / line
     collapsePoints: false,
     rawPoints: [],
     pendingAction: null    // {token, name, ...payload}
