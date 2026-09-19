@@ -1272,7 +1272,25 @@ const ModeToolsComponent = props => {
         const collapse = props.polyRoundCollapse;
         const rawPoints = props.polyRoundRawPoints || [];
 
-        const autoCollapse = collapse || rawPoints.length > 2;
+        // Only respect the *explicit* collapse flag from Redux — no automatic
+        // collapse based on point count. User has a +/- button to toggle.
+        const autoCollapse = !!collapse;
+
+        // Theme-aware colors via CSS variables (Turbowarp writes these to
+        // document.body when the user switches themes). Fallbacks match the
+        // light-theme values so older builds still look correct.
+        const CARD_BG    = 'var(--ui-tertiary, #fafafa)';
+        const CARD_BDR   = 'var(--ui-secondary, #ccc)';
+        const CARD_FG    = 'var(--text-primary, #111)';
+        const MUTED      = 'var(--looks-secondary, #888)';
+        const INPUT_BG   = 'var(--ui-primary, #fff)';
+        const HINT       = 'var(--looks-secondary, #888)';
+
+        // Input refs used with a "defaultValue + blur commit" pattern so the
+        // user can type/delete/paste/IME-edit freely — no React controlled-
+        // component fight-back while editing.
+        const xRefs = [];
+        const yRefs = [];
 
         const pointCard = (pt, idx) => (
             <div
@@ -1280,26 +1298,69 @@ const ModeToolsComponent = props => {
                 style={{
                     display:'flex', gap:'3px', alignItems:'center',
                     fontSize:'11px', lineHeight:'18px', fontFamily:'monospace',
-                    border:'1px solid #ddd', borderRadius:'3px', padding:'2px 3px',
-                    background:'#fafafa'
+                    border:'1px solid ' + CARD_BDR,
+                    borderRadius:'3px', padding:'2px 3px',
+                    background: CARD_BG, color: CARD_FG
                 }}
             >
-                <span style={{minWidth:'16px', color:'#888', textAlign:'center'}}>{idx+1}</span>
-                <span>x</span>
+                <span style={{minWidth:'16px', color: MUTED, textAlign:'center'}}>{idx+1}</span>
+                <span style={{color: MUTED}}>x</span>
                 <input
+                    ref={r => { if (r) xRefs[idx] = r; }}
                     type="number" step="0.1"
-                    value={Number(pt.x.toFixed(1))}
-                    onBlur={e => props.onPolyRoundSetPoint(idx, Number(e.target.value) || 0, pt.y)}
-                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-                    style={{width:'48px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
+                    defaultValue={Number(pt.x.toFixed(1))}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => {
+                        const v = e.target.value;
+                        if (v === '' || v === '-' || v === '.' || v === '-.') { e.target.value = Number(pt.x.toFixed(1)); return; }
+                        const n = Number(v);
+                        if (isNaN(n)) { e.target.value = Number(pt.x.toFixed(1)); return; }
+                        props.onPolyRoundSetPoint(idx, n, pt.y);
+                    }}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter') e.target.blur();
+                        else if (e.key === 'Escape') {
+                            e.target.value = Number(pt.x.toFixed(1));
+                            e.target.blur();
+                        }
+                    }}
+                    style={{
+                        width:'50px', fontSize:'11px', padding:'0 2px',
+                        fontFamily:'monospace',
+                        border:'1px solid ' + CARD_BDR,
+                        borderRadius:'2px',
+                        background: INPUT_BG,
+                        color: CARD_FG
+                    }}
                 />
-                <span>y</span>
+                <span style={{color: MUTED}}>y</span>
                 <input
+                    ref={r => { if (r) yRefs[idx] = r; }}
                     type="number" step="0.1"
-                    value={Number(pt.y.toFixed(1))}
-                    onBlur={e => props.onPolyRoundSetPoint(idx, pt.x, Number(e.target.value) || 0)}
-                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-                    style={{width:'48px', fontSize:'11px', padding:'0 2px', fontFamily:'monospace', border:'1px solid #ccc', borderRadius:'2px'}}
+                    defaultValue={Number(pt.y.toFixed(1))}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => {
+                        const v = e.target.value;
+                        if (v === '' || v === '-' || v === '.' || v === '-.') { e.target.value = Number(pt.y.toFixed(1)); return; }
+                        const n = Number(v);
+                        if (isNaN(n)) { e.target.value = Number(pt.y.toFixed(1)); return; }
+                        props.onPolyRoundSetPoint(idx, pt.x, n);
+                    }}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter') e.target.blur();
+                        else if (e.key === 'Escape') {
+                            e.target.value = Number(pt.y.toFixed(1));
+                            e.target.blur();
+                        }
+                    }}
+                    style={{
+                        width:'50px', fontSize:'11px', padding:'0 2px',
+                        fontFamily:'monospace',
+                        border:'1px solid ' + CARD_BDR,
+                        borderRadius:'2px',
+                        background: INPUT_BG,
+                        color: CARD_FG
+                    }}
                 />
                 <button
                     type="button"
@@ -1351,7 +1412,7 @@ const ModeToolsComponent = props => {
                         <option value="none">{props.intl.formatMessage(messages.polyRoundShowNone)}</option>
                     </select>
                 </label>
-                <span style={{fontStyle:'italic', fontSize:'11px', color:'#888'}}>
+                <span style={{fontStyle:'italic', fontSize:'11px', color: HINT}}>
                     {props.intl.formatMessage(messages.polyRoundHint)}
                 </span>
 
@@ -1359,8 +1420,9 @@ const ModeToolsComponent = props => {
                 <div
                     title={props.intl.formatMessage(messages.polyRoundPoints)}
                     style={{
-                        border:'1px solid #ccc', borderRadius:'4px', padding:'4px 6px',
+                        border:'1px solid ' + CARD_BDR, borderRadius:'4px', padding:'4px 6px',
                         minWidth:'340px', maxWidth:'460px',
+                        background: CARD_BG, color: CARD_FG,
                         maxHeight: autoCollapse ? '26px' : '260px',
                         overflow:'auto', transition:'max-height 0.15s ease'
                     }}
