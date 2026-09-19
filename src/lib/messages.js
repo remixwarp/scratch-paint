@@ -130,7 +130,7 @@ const messages = defineMessages({
         defaultMessage: 'Click on the canvas to add vertices. Drag any vertex marker to reshape. Finish with double-click, Enter, or the Finish button.',
         description: 'Hint shown to the user explaining how to use the rounded polygon tool — add, drag, finish',
         id: 'paint.polyRoundMode.hint',
-
+    }
 });
 
 export default messages;
