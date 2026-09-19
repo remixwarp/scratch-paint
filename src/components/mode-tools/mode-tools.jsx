@@ -1389,7 +1389,9 @@ const ModeToolsComponent = props => {
                         <div style={{
                             marginTop:'4px',
                             display:'grid',
-                            gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))',
+                            // Fixed 2 columns so card 3 is directly under card 1,
+                            // card 4 under card 2, etc. (column-first stacking).
+                            gridTemplateColumns:'repeat(2, minmax(150px, 1fr))',
                             gap:'4px'
                         }}>
                             {rawPoints.map(pointCard)}
