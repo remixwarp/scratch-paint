@@ -60,7 +60,7 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
         // SVG sweep (screen-coord CW) vs paper clockwise (math-coord CW) are opposites:
         // PolyGoneRound uses sweep = angle>PI ? 0 : 1 (1=screen CW)
         // paper clockwise=true = math CW = screen CCW → flip: paper_clockwise = (svg_sweep===0)
-        const clockwise = angle > Math.PI;
+        const clockwise = angle <= Math.PI;
 
         let l = radius / Math.abs(Math.tan(angle / 2 || 1e-9));
         let r = radius;
@@ -70,7 +70,7 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
             r = half * Math.abs(Math.tan(angle / 2 || 1e-9));
         }
 
-        return {p, u1, u2, angle, clockwise, r, l};
+        return {p, u1, u2, angle, clockwise, r, l, len1, len2};
     });
 
     // Degenerate fallback (coincident vertices) — straight polygon
