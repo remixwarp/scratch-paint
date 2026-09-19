@@ -1270,6 +1270,7 @@ const ModeToolsComponent = props => {
         const limitRadius = props.polyRoundLimitRadius;
         const showItems = props.polyRoundShowItems || 'both';
         const collapse = props.polyRoundCollapse;
+        const autoOrder = props.polyRoundAutoOrder !== false;
         const rawPoints = props.polyRoundRawPoints || [];
 
         // Only respect the *explicit* collapse flag from Redux — no automatic
@@ -1436,6 +1437,15 @@ const ModeToolsComponent = props => {
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
                             >{autoCollapse ? '+' : '-'}</button>
                             <button type="button"
+                                onClick={props.onPolyRoundToggleAutoOrder}
+                                title={autoOrder ? 'Auto-order ON — points snap to simple polygon (polar sort)' : 'Auto-order OFF — keep click order as-is'}
+                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px',
+                                    background: autoOrder ? '#4CAF50' : 'transparent',
+                                    color: autoOrder ? '#fff' : 'inherit',
+                                    border: autoOrder ? '1px solid #4CAF50' : '1px solid #ccc',
+                                    borderRadius:'2px'}}
+                            >⟳</button>
+                            <button type="button"
                                 onClick={props.onPolyRoundAddPoint}
                                 title={props.intl.formatMessage(messages.polyRoundAddPoint)}
                                 style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
@@ -1509,12 +1519,14 @@ ModeToolsComponent.propTypes = {
     polyRoundLimitRadius: PropTypes.bool,
     polyRoundShowItems: PropTypes.string,
     polyRoundCollapse: PropTypes.bool,
+    polyRoundAutoOrder: PropTypes.bool,
     polyRoundRawPoints: PropTypes.array,
     onPolyRoundRadiusChange: PropTypes.func,
     onPolyRoundCornerStyleChange: PropTypes.func,
     onPolyRoundLimitRadiusChange: PropTypes.func,
     onPolyRoundShowItemsChange: PropTypes.func,
     onPolyRoundToggleCollapse: PropTypes.func,
+    onPolyRoundToggleAutoOrder: PropTypes.func,
     onPolyRoundSetPoint: PropTypes.func,
     onPolyRoundRemovePoint: PropTypes.func,
     onPolyRoundClear: PropTypes.func,
@@ -1579,6 +1591,7 @@ const mapStateToProps = state => ({
     polyRoundLimitRadius: state.scratchPaint.polyRoundMode.limitRadius,
     polyRoundShowItems: state.scratchPaint.polyRoundMode.showItems,
     polyRoundCollapse: state.scratchPaint.polyRoundMode.collapsePoints,
+    polyRoundAutoOrder: state.scratchPaint.polyRoundMode.autoOrder,
     polyRoundRawPoints: state.scratchPaint.polyRoundMode.rawPoints
 });
 const mapDispatchToProps = dispatch => ({
