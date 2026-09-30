@@ -9,73 +9,22 @@ import {getGuideLayer} from '../layer';
 /**
  * Visual-only poly-round vertex marker.
  *
- * It is drawn exactly like paper.js' own segment handles (see paper-full.js
- * `drawHandles` + `Item#_drawSelection`) so the points of this tool are
- * pixel-identical to the ones the reshape tool shows on a selected path:
- *   radius 4 (= paper.settings.handleSize / 2, which scratch-paint sets to 8)
- *   fill   'rgba(255, 255, 255, 0.5)'
- *   stroke 2.5px, '#009dec' (paper's fallback selection color)
- *
- * Two implementation details matter for correctness:
- *   1. paper.js invokes `item.draw(ctx, param)` — the second argument is the
- *      drawing *param* object (viewMatrix / pixelRatio / ...), NOT a matrix, so
- *      we must not read `.a` / `.tx` from it.
- *   2. We paint in view (screen) space with an explicit pixel-ratio transform,
- *      which is the same space paper.js uses for its own handles. That keeps
- *      the dot a perfect circle with a constant on-screen size at any zoom.
+ * Uses paper's native Shape.Circle — no custom draw override, so the matrix
+ * pipeline stays intact and it renders exactly like the reshape tool's
+ * segment handles (same stroke #009dec, same fill rgba(255,255,255,.5),
+ * same stroke-width 2.5, same radius 4 = paper.settings.handleSize / 2).
  */
-class PolyRoundMarker extends paper.Item {
-    constructor (pos, index) {
-        // paper.Item is built with paper's own Base.extend chain. Its
-        // constructor (`initialize`) is empty — the real setup happens in
-        // `_initialize(props, point)`, which Base.extend auto-injects only
-        // for paper-native subclasses (Shape, Path, Group, ...). When we use
-        // ES6 `class extends`, `super(props, point)` only reaches the empty
-        // Item constructor, so `_matrix`, `_parent`, `_project` etc. are never
-        // established. Call _initialize ourselves explicitly.
-        super();
-        paper.Item.prototype._initialize.call(this, {
-            data: {
-                index: index,
-                isPolyRoundMarker: true,
-                isHelperItem: true
-            },
-            guide: true,
-            locked: true
-        }, pos.clone());
-    }
-    draw (ctx, param) {
-        // Overriding `draw` bypasses paper's own visibility handling, so honour
-        // the "show markers / guide / none" toggle ourselves.
-        if (!this.visible) return;
-        // IMPORTANT: we override Item.draw() entirely — no super() call.
-        // Item.draw normally applies view.matrix × item.matrix to ctx and then
-        // lets each subclass call ctx.save/restore inside _draw. By skipping all
-        // that we also skip the matrix setup and must produce screen coordinates
-        // ourselves. Follow the same math paper's drawHandles() uses for
-        // segment handles so this marker is pixel-identical to the ones the
-        // reshape tool draws on a selected path.
-        const view = paper.view;
-        if (!view) return;
-        const transform = (param && param.viewMatrix) || view.matrix;
-        // transform._transformPoint is public-paper's equivalent of
-        // Base._transformPoint and is the same primitive drawHandles calls
-        // via segment._transformCoordinates.
-        const screen = transform._transformPoint
-            ? transform._transformPoint(this.position)
-            : transform.transformPoint(this.position);
-        // ctx already holds whatever paper put on us — paper calls our draw
-        // with ctx whose current transform is (viewport matrix × pixel ratio)
-        // from view.draw(), so we MUST NOT reset it. Just stroke/fill directly
-        // at `screen`, same matrix space as drawHandles does.
-        ctx.beginPath();
-        ctx.arc(screen.x, screen.y, 4, 0, Math.PI * 2, true);
-        ctx.strokeStyle = '#009dec';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.fill();
-    }
+function makeMarkerShape (pos, index) {
+    const circle = new paper.Shape.Circle(pos.clone(), 4);
+    circle.strokeColor = new paper.Color('#009dec');
+    circle.strokeWidth = 2.5;
+    circle.fillColor = new paper.Color(1, 1, 1, 0.5);
+    circle.guide = true;
+    circle.locked = true;
+    circle.data.index = index;
+    circle.data.isPolyRoundMarker = true;
+    circle.data.isHelperItem = true;
+    return circle;
 }
 
 /**
@@ -396,7 +345,7 @@ class PolyRoundTool extends paper.Tool {
         const layer = getGuideLayer();
         for (let i = 0; i < this._rawPoints.length; i++) {
             const p = this._rawPoints[i];
-            const dot = new PolyRoundMarker(p, i);
+            const dot = makeMarkerShape(p, i);
             layer.addChild(dot);
             this._markers.push(dot);
         }
