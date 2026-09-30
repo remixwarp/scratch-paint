@@ -50,14 +50,21 @@ class PolyRoundMarker extends paper.Item {
         if (!this.visible) return;
         const view = paper.view;
         if (!view) return;
-        const screen = view.projectToView(this.position);
+        // Convert the world-space marker position into canvas-local CSS pixels
+        // (origin top-left of the art board). Important: view.projectToView
+        // goes the OTHER way (canvas-local → world). We want world → canvas-local,
+        // which is view.viewToProject. If we called projectToView here the arc
+        // would end up at e.g. (-240, -180) world-space and be clipped off the
+        // visible canvas — exactly the symptom we had just before.
+        const canvasPt = view.viewToProject(this.position);
         const pixelRatio = (param && param.pixelRatio) || view.pixelRatio || 1;
         ctx.save();
-        // ctx normally holds view-matrix × pixel-ratio; reset to a clean
-        // pixel-ratio-only transform so `screen` is measured in CSS pixels.
+        // ctx normally carries view.matrix × pixelRatio; reset to a clean
+        // pixel-ratio-only transform so `canvasPt` (which is already CSS pixels)
+        // gets scaled up by devicePixelRatio once and only once.
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         ctx.beginPath();
-        ctx.arc(screen.x, screen.y, 4, 0, Math.PI * 2, true);
+        ctx.arc(canvasPt.x, canvasPt.y, 4, 0, Math.PI * 2, true);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.fill();
         ctx.lineWidth = 2.5;
