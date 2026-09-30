@@ -479,22 +479,24 @@ class PolyRoundTool extends paper.Tool {
     }
 
     handleMouseDown (event) {
-        if (event.event.button > 0) return;
-        // NEVER let clicks on toolbar inputs/buttons leak into paper
-        if (this._isFormTarget(event.event)) return;
-
+        // NOTE: paper.js already normalizes pointerdown / touchstart / mousedown
+        // into this single event flow — we do NOT re-filter by button/target
+        // here. PenTool, FillTool etc. don't either, and re-filtering with a
+        // stale button/target on certain mobile browsers is what causes
+        // "no endpoint gets placed" on touch.
         this._active = true;
+        const p = event.point;
 
-        // 1) Marker hit-test. Custom PolyRoundMarker Items live on the guide
-        //    layer as canvas primitives — paper's hitTest() can't find them, so
-        //    do the distance check ourselves in project coordinates.
+        // 1) Marker hit-test. Custom PolyRoundMarker Items are canvas-only
+        //    guide primitives — paper.project.hitTest can't find them, so do
+        //    our own distance check. Use a generous screen-pixel tolerance
+        //    (converted to world) so finger taps hit reliably.
         let hitIndex = -1;
+        let hitDist = Infinity;
         for (let i = 0; i < this._markers.length; i++) {
-            const m = this._markers[i];
-            const d = m.position.getDistance(event.point);
-            if (d <= PolyRoundTool.SNAP_TOLERANCE / paper.view.zoom) {
-                hitIndex = i;
-                break;
+            const d = this._markers[i].position.getDistance(p);
+            if (d <= PolyRoundTool.SNAP_TOLERANCE / paper.view.zoom && d < hitDist) {
+                hitIndex = i; hitDist = d;
             }
         }
         if (hitIndex >= 0) {
@@ -502,26 +504,10 @@ class PolyRoundTool extends paper.Tool {
             return;
         }
 
-        // 2) Click on our live preview / dashed guide → treat as add vertex
-        const liveHit = paper.project.hitTest(event.point, {
-            tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom,
-            fill: true, stroke: true, segments: true, curves: true,
-            match: h => {
-                const it = h.item;
-                if (!it || !it.data) return false;
-                // Direct flag check OR any ancestor carrying the flag
-                if (it.data.isPolyRoundLive || it.data.isPolyRoundGuide) return true;
-                return false;
-            }
-        });
-        if (liveHit) {
-            clearSelection(this.clearSelectedItems);
-            this.isBoundingBoxMode = false;
-            this.addPointAt(event.point);
-            return;
-        }
-
-        // 3) Bounding-box transform on a committed item from earlier
+        // 2) Bounding-box transform on a committed item (one we didn't make).
+        //    Skip live/guide items; they belong to us and we handle them below.
+        //    Tolerance is in screen pixels — convert to world like every other
+        //    tool does.
         if (this.boundingBoxTool.onMouseDown(
             event, false, false, false, {
                 segments: true, stroke: true, curves: true, fill: true,
@@ -529,10 +515,7 @@ class PolyRoundTool extends paper.Tool {
                 match: hit => {
                     const it = hit.item;
                     if (!it || !it.data) return true;
-                    // Never try to bound-box our own live items — even if they
-                    // somehow didn't match step #2 above
-                    if (it.data.isPolyRoundLive || it.data.isPolyRoundGuide) return false;
-                    if (it.data.isPolyRoundMarker) return false;
+                    if (it.data.isPolyRoundLive || it.data.isPolyRoundGuide || it.data.isPolyRoundMarker) return false;
                     return true;
                 },
                 tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom
@@ -541,14 +524,16 @@ class PolyRoundTool extends paper.Tool {
             return;
         }
 
-        // 4) Add new vertex
+        // 3) Anything else: add a new vertex at the click / tap point. This is
+        //    also how clicking on our live guide path works — we simply never
+        //    exit before reaching here if nothing else claimed the event.
         clearSelection(this.clearSelectedItems);
         this.isBoundingBoxMode = false;
-        this.addPointAt(event.point);
+        this.addPointAt(p);
     }
 
     handleMouseDrag (event) {
-        if (event.event.button > 0 || !this._active) return;
+        if (!this._active) return;
         if (this.isBoundingBoxMode) { this.boundingBoxTool.onMouseDrag(event); return; }
         if (this._draggingIndex >= 0 && this._draggingIndex < this._rawPoints.length) {
             this._rawPoints[this._draggingIndex].set(event.point);
@@ -560,7 +545,6 @@ class PolyRoundTool extends paper.Tool {
     }
 
     handleMouseUp (event) {
-        if (event.event.button > 0) return;
         if (this.isBoundingBoxMode) { this.boundingBoxTool.onMouseUp(event); this.isBoundingBoxMode = null; }
         this._draggingIndex = -1;
         this._active = false;
@@ -572,17 +556,7 @@ class PolyRoundTool extends paper.Tool {
 
     handleMouseMove (event) {
         if (this.isBoundingBoxMode) {
-            this.boundingBoxTool.onMouseMove(event, {
-                segments: true, stroke: true, curves: true, fill: true,
-                guide: false,
-                match: hit => {
-                    const it = hit.item;
-                    if (!it || !it.data) return true;
-                    if (it.data.isPolyRoundLive || it.data.isPolyRoundGuide || it.data.isPolyRoundMarker) return false;
-                    return true;
-                },
-                tolerance: PolyRoundTool.TOLERANCE / paper.view.zoom
-            });
+            this.boundingBoxTool.onMouseMove(event);
         }
     }
 
