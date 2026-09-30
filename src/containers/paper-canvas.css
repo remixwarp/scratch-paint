@@ -6,6 +6,22 @@
     margin: auto;
     position: absolute;
     background-color: #D9E3F2;
+    /*
+     * Critical for reliable finger/touch coordinates:
+     *   - touch-action: none disables the browser's default panning / zooming /
+     *     context-menu gestures, which on mobile race with paper.js' touchstart/
+     *     touchmove listeners and cause the DOM to scroll or zoom between events —
+     *     the result is that clientX/clientY no longer match the canvas position
+     *     the user is actually touching → big click/tap offset.
+     *   - user-select: none prevents text-selection on touch-hold, which also
+     *     shifts gesture timing in some WebKit browsers.
+     *   - -webkit-touch-callout prevents the callout popup.
+     */
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-callout: none;
 }
 [data-paint-theme="dark"] .paper-canvas {
     background-color: #222;

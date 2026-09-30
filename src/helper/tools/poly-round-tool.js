@@ -320,15 +320,30 @@ class PolyRoundTool extends paper.Tool {
     _rebuildMarkers () {
         this._markers.forEach(m => m.remove());
         this._markers = [];
-        const dotSize = 6 / paper.view.zoom; // radius 6 → ~12px diameter
+        // Match the reshape tool's segment handle style exactly:
+        //   - paper.settings.handleSize = 5.25 * 2 - 2.5 = 8 px screen diameter
+        //     (paper.js drawHandles uses ctx.arc with radius = size / 2)
+        //   - stroke = the currently selected stroke color (or '#009dec' fallback),
+        //     lineWidth = 2.5 (paper.js default handle stroke width)
+        //   - fill = semi-transparent white
+        // Geometric radius scales with 1/zoom so the on-screen diameter stays 8px.
+        // Stroke width also scales because paper.Path strokeWidth is in world units.
+        const dotSize = 8 / 2 / paper.view.zoom; // 4 world-units radius
+        let strokeColor = new paper.Color('#009dec');
+        try {
+            const first = paper.project.selectedItems && paper.project.selectedItems[0];
+            if (first && first.strokeColor && first.strokeColor.type === 'color') {
+                strokeColor = first.strokeColor.clone();
+            }
+        } catch (_e) { /* ignore */ }
         for (let i = 0; i < this._rawPoints.length; i++) {
             const p = this._rawPoints[i];
             const dot = new paper.Path.Circle({
                 center: p,
                 radius: dotSize,
-                fillColor: new paper.Color(1, 0.3, 0.3, 1),
-                strokeColor: new paper.Color(1, 1, 1, 1),
-                strokeWidth: 1 / paper.view.zoom
+                fillColor: new paper.Color(1, 1, 1, 0.5),
+                strokeColor: strokeColor,
+                strokeWidth: 2.5 / paper.view.zoom
             });
             dot.data.isPolyRoundMarker = true;
             dot.data.index = i;
