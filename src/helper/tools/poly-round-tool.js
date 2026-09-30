@@ -26,15 +26,15 @@ import {getGuideLayer} from '../layer';
  */
 class PolyRoundMarker extends paper.Item {
     constructor (pos, index) {
-        // Use paper.Item's native (props, point) constructor. The second
-        // arg translates the item's matrix directly — no call to setPosition,
-        // which is important because setPosition internally calls
-        // _getCachedBounds → this._matrix._orNullIfIdentity() and that
-        // crashes if Item._initialize hasn't yet established this._matrix.
-        // Subclassing and then `super(); this.position = ...` triggers exactly
-        // that race; passing the point via the (props, point) args is the
-        // documented paper way to build a positioned Item.
-        super({
+        // paper.Item is built with paper's own Base.extend chain. Its
+        // constructor (`initialize`) is empty — the real setup happens in
+        // `_initialize(props, point)`, which Base.extend auto-injects only
+        // for paper-native subclasses (Shape, Path, Group, ...). When we use
+        // ES6 `class extends`, `super(props, point)` only reaches the empty
+        // Item constructor, so `_matrix`, `_parent`, `_project` etc. are never
+        // established. Call _initialize ourselves explicitly.
+        super();
+        paper.Item.prototype._initialize.call(this, {
             data: {
                 index: index,
                 isPolyRoundMarker: true,
