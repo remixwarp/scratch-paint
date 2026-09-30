@@ -48,29 +48,33 @@ class PolyRoundMarker extends paper.Item {
         // Overriding `draw` bypasses paper's own visibility handling, so honour
         // the "show markers / guide / none" toggle ourselves.
         if (!this.visible) return;
+        // IMPORTANT: we override Item.draw() entirely — no super() call.
+        // Item.draw normally applies view.matrix × item.matrix to ctx and then
+        // lets each subclass call ctx.save/restore inside _draw. By skipping all
+        // that we also skip the matrix setup and must produce screen coordinates
+        // ourselves. Follow the same math paper's drawHandles() uses for
+        // segment handles so this marker is pixel-identical to the ones the
+        // reshape tool draws on a selected path.
         const view = paper.view;
         if (!view) return;
-        // Convert the world-space marker position into canvas-local CSS pixels
-        // (origin top-left of the art board). Important: view.projectToView
-        // goes the OTHER way (canvas-local → world). We want world → canvas-local,
-        // which is view.viewToProject. If we called projectToView here the arc
-        // would end up at e.g. (-240, -180) world-space and be clipped off the
-        // visible canvas — exactly the symptom we had just before.
-        const canvasPt = view.viewToProject(this.position);
-        const pixelRatio = (param && param.pixelRatio) || view.pixelRatio || 1;
-        ctx.save();
-        // ctx normally carries view.matrix × pixelRatio; reset to a clean
-        // pixel-ratio-only transform so `canvasPt` (which is already CSS pixels)
-        // gets scaled up by devicePixelRatio once and only once.
-        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        const transform = (param && param.viewMatrix) || view.matrix;
+        // transform._transformPoint is public-paper's equivalent of
+        // Base._transformPoint and is the same primitive drawHandles calls
+        // via segment._transformCoordinates.
+        const screen = transform._transformPoint
+            ? transform._transformPoint(this.position)
+            : transform.transformPoint(this.position);
+        // ctx already holds whatever paper put on us — paper calls our draw
+        // with ctx whose current transform is (viewport matrix × pixel ratio)
+        // from view.draw(), so we MUST NOT reset it. Just stroke/fill directly
+        // at `screen`, same matrix space as drawHandles does.
         ctx.beginPath();
-        ctx.arc(canvasPt.x, canvasPt.y, 4, 0, Math.PI * 2, true);
+        ctx.arc(screen.x, screen.y, 4, 0, Math.PI * 2, true);
+        ctx.strokeStyle = '#009dec';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.fill();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = '#009dec';
-        ctx.stroke();
-        ctx.restore();
     }
 }
 
