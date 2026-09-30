@@ -4,6 +4,56 @@ import {styleShape} from '../style-path';
 import {clearSelection} from '../selection';
 import BoundingBoxTool from '../selection-tools/bounding-box-tool';
 import NudgeTool from '../selection-tools/nudge-tool';
+import {getGuideLayer} from '../layer';
+
+/**
+ * Visual-only poly-round vertex marker drawn with raw canvas primitives so it
+ * stays a PERFECT circle regardless of the current view.matrix (zoom + pan
+ * plus any CSS-size roundoff that would make scaleX !== scaleY and flatten a
+ * paper.Path.Circle into an ellipse).
+ *
+ * All sizes here are SCREEN PIXELS — the reshape tool's canvas-drawn segment
+ * handles (radius = 4, stroke width = 2.5) use the same convention, so users
+ * see ONE consistent "point" style across all vector tools.
+ */
+class PolyRoundMarker extends paper.Item {
+    constructor (pos, index) {
+        super();
+        this.position = pos.clone();
+        this.data.index = index;
+        this.data.isPolyRoundMarker = true;
+        this.data.isHelperItem = true;
+        this.guide = true;
+        this.locked = true;
+    }
+    getStrokeColor () {
+        try {
+            const first = paper.project.selectedItems && paper.project.selectedItems[0];
+            if (first && first.strokeColor && first.strokeColor.type === 'color') {
+                return first.strokeColor;
+            }
+        } catch (_e) { /* ignore */ }
+        return new paper.Color('#009dec');
+    }
+    draw (ctx, matrix) {
+        // matrix = view.matrix × (item.matrix = identity)
+        // Compute screen-space marker center...
+        const sx = this.position.x * matrix.a + this.position.y * matrix.c + matrix.tx;
+        const sy = this.position.x * matrix.b + this.position.y * matrix.d + matrix.ty;
+        // ...then paint entirely in canvas-pixel identity so arc numbers stay
+        // pure screen pixels — never warped by the current zoom matrix.
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.beginPath();
+        ctx.arc(sx, sy, 4, 0, Math.PI * 2, true);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = this.getStrokeColor().toCanvasStyle(ctx);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
 
 /**
  * Build a closed rounded paper.Path from an array of raw polygon vertices
@@ -224,6 +274,24 @@ class PolyRoundTool extends paper.Tool {
     getRawPoints () { return this._rawPoints.slice(); }
 
     addPointAt (p) {
+        // Diagnostic log: print the event-point mapping every time a vertex is
+        // created so we can compare world coords, canvas rect and the raw DOM
+        // clientX/Y the user actually touched. Offsets here point straight at
+        // whatever's causing the "偏上" symptom.
+        try {
+            const canvas = paper.view.element;
+            const rect = canvas.getBoundingClientRect();
+            const zoom = paper.view.zoom;
+            const mat = paper.view.matrix;
+            const sx = mat.a * p.x + mat.c * p.y + mat.tx;
+            const sy = mat.b * p.x + mat.d * p.y + mat.ty;
+            console.log('[PolyRound] addPointAt world=(%d,%d)→screen=(%d,%d) zoom=%d rect=(%d,%d,%d,%d) canvas=(%d,%d)',
+                Math.round(p.x), Math.round(p.y), Math.round(sx), Math.round(sy),
+                Number(zoom).toFixed(3),
+                Math.round(rect.left), Math.round(rect.top),
+                Math.round(rect.width), Math.round(rect.height),
+                canvas.width, canvas.height);
+        } catch (_e) { /* ignore */ }
         this._rawPoints.push(p.clone());
         this._rebuildMarkers();
         this._regeneratePreview();
@@ -320,33 +388,11 @@ class PolyRoundTool extends paper.Tool {
     _rebuildMarkers () {
         this._markers.forEach(m => m.remove());
         this._markers = [];
-        // Match the reshape tool's segment handle style exactly:
-        //   - paper.settings.handleSize = 5.25 * 2 - 2.5 = 8 px screen diameter
-        //     (paper.js drawHandles uses ctx.arc with radius = size / 2)
-        //   - stroke = the currently selected stroke color (or '#009dec' fallback),
-        //     lineWidth = 2.5 (paper.js default handle stroke width)
-        //   - fill = semi-transparent white
-        // Geometric radius scales with 1/zoom so the on-screen diameter stays 8px.
-        // Stroke width also scales because paper.Path strokeWidth is in world units.
-        const dotSize = 8 / 2 / paper.view.zoom; // 4 world-units radius
-        let strokeColor = new paper.Color('#009dec');
-        try {
-            const first = paper.project.selectedItems && paper.project.selectedItems[0];
-            if (first && first.strokeColor && first.strokeColor.type === 'color') {
-                strokeColor = first.strokeColor.clone();
-            }
-        } catch (_e) { /* ignore */ }
+        const layer = getGuideLayer();
         for (let i = 0; i < this._rawPoints.length; i++) {
             const p = this._rawPoints[i];
-            const dot = new paper.Path.Circle({
-                center: p,
-                radius: dotSize,
-                fillColor: new paper.Color(1, 1, 1, 0.5),
-                strokeColor: strokeColor,
-                strokeWidth: 2.5 / paper.view.zoom
-            });
-            dot.data.isPolyRoundMarker = true;
-            dot.data.index = i;
+            const dot = new PolyRoundMarker(p, i);
+            layer.addChild(dot);
             this._markers.push(dot);
         }
         this._applyVisibility();
@@ -439,14 +485,20 @@ class PolyRoundTool extends paper.Tool {
 
         this._active = true;
 
-        // 1) Marker hit-test — most generous tolerance on mobile
-        const markerHit = paper.project.hitTest(event.point, {
-            tolerance: PolyRoundTool.SNAP_TOLERANCE / paper.view.zoom,
-            fill: true, stroke: true,
-            match: h => h.item && h.item.data && h.item.data.isPolyRoundMarker
-        });
-        if (markerHit && markerHit.item && typeof markerHit.item.data.index === 'number') {
-            this._draggingIndex = markerHit.item.data.index;
+        // 1) Marker hit-test. Custom PolyRoundMarker Items live on the guide
+        //    layer as canvas primitives — paper's hitTest() can't find them, so
+        //    do the distance check ourselves in project coordinates.
+        let hitIndex = -1;
+        for (let i = 0; i < this._markers.length; i++) {
+            const m = this._markers[i];
+            const d = m.position.getDistance(event.point);
+            if (d <= PolyRoundTool.SNAP_TOLERANCE / paper.view.zoom) {
+                hitIndex = i;
+                break;
+            }
+        }
+        if (hitIndex >= 0) {
+            this._draggingIndex = hitIndex;
             return;
         }
 
