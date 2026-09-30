@@ -383,6 +383,16 @@ class PolyRoundMode extends React.Component {
         clearSelection(this.props.clearSelectedItems);
         this.validateColorState();
 
+        // Reset Redux's raw-points slice *before* building the tool / window.
+        // Otherwise an old residual value (from a previous session where the
+        // tool was used and then closed without a clean deactivateTool, e.g.
+        // after a hot reload or mode swap) leaks into the fresh window the
+        // moment openVertexWindow → buildVertexWindow → syncVertexWindow reads
+        // this.props.rawPoints. That stale list then sits "ahead" of the empty
+        // tool._rawPoints so the user's very first click shows "no first point
+        // in the window until I click / drag once more to trigger another sync".
+        this.props.onSyncPoints([]);
+
         if (typeof this.props.radius !== 'number') this.props.onChangeRadius(20);
 
         this.tool = new PolyRoundTool(
