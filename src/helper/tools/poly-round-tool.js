@@ -26,13 +26,23 @@ import {getGuideLayer} from '../layer';
  */
 class PolyRoundMarker extends paper.Item {
     constructor (pos, index) {
-        super();
-        this.position = pos.clone();
-        this.data.index = index;
-        this.data.isPolyRoundMarker = true;
-        this.data.isHelperItem = true;
-        this.guide = true;
-        this.locked = true;
+        // Use paper.Item's native (props, point) constructor. The second
+        // arg translates the item's matrix directly — no call to setPosition,
+        // which is important because setPosition internally calls
+        // _getCachedBounds → this._matrix._orNullIfIdentity() and that
+        // crashes if Item._initialize hasn't yet established this._matrix.
+        // Subclassing and then `super(); this.position = ...` triggers exactly
+        // that race; passing the point via the (props, point) args is the
+        // documented paper way to build a positioned Item.
+        super({
+            data: {
+                index: index,
+                isPolyRoundMarker: true,
+                isHelperItem: true
+            },
+            guide: true,
+            locked: true
+        }, pos.clone());
     }
     draw (ctx, param) {
         // Overriding `draw` bypasses paper's own visibility handling, so honour
