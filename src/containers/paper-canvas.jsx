@@ -42,6 +42,18 @@ class PaperCanvas extends React.Component {
     componentDidMount () {
         paper.setup(this.canvas);
         paper.view.on('resize', this.onViewResize);
+        // The canvas is laid out by CSS (see paper-canvas.css) while paper.js
+        // only re-reads its size on *window* resize. Every other layout change
+        // — e.g. switching to a tool whose toolbar row is taller — used to
+        // leave `paper.view.viewSize` stale, so the bitmap was stretched by CSS:
+        // circles turned into ellipses, clicks landed off-target, and taps that
+        // fell outside the stale view bounds were dropped entirely.
+        // Watching the canvas element itself keeps "the size paper draws with"
+        // equal to "the size the user sees", for every tool.
+        if (typeof ResizeObserver !== 'undefined') {
+            this.resizeObserver = new ResizeObserver(() => this.recalibrateSize());
+            this.resizeObserver.observe(this.canvas);
+        }
         resetZoom();
         if (this.props.zoomLevelId) {
             this.props.setZoomLevelId(this.props.zoomLevelId);
@@ -84,6 +96,10 @@ class PaperCanvas extends React.Component {
     }
     componentWillUnmount () {
         this.clearQueuedImport();
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
         // shouldZoomToFit means the zoom level hasn't been initialized yet
         if (!this.shouldZoomToFit) {
             this.props.saveZoomLevel();

@@ -29,18 +29,18 @@ import {clearSelection, getSelectedLeafItems} from '../helper/selection';
 import PolyRoundTool from '../helper/tools/poly-round-tool';
 import PolyRoundModeComponent from '../components/poly-round-mode/poly-round-mode.jsx';
 
-// Optional: GUI-side window-manager (only present when loaded as a Remix Warp
-// addon; vanilla scratch-paint won't have this module, so fail gracefully).
+// Optional: GUI-side window-manager. It only exists when scratch-paint is
+// built inside the GUI, whose webpack config aliases '@remixwarp/window-manager'
+// to the addon window system (src/addons/window-system/window-manager.js).
+// Vanilla scratch-paint builds don't have that alias, so degrade to the inline
+// toolbar UI instead of crashing the module.
 let WindowManager = null;
 try {
-    WindowManager = require('@remixwarp/window-manager').default;
+    // eslint-disable-next-line global-require
+    const windowManagerModule = require('@remixwarp/window-manager');
+    WindowManager = (windowManagerModule && windowManagerModule.default) || windowManagerModule || null;
 } catch (_e) {
-    try {
-        // Fallback path used by the bundled RW addon system
-        WindowManager = require('../../window-system/window-manager.js').default;
-    } catch (_e2) {
-        WindowManager = null;
-    }
+    WindowManager = null;
 }
 
 
@@ -54,19 +54,31 @@ class PolyRoundMode extends React.Component {
             'handlePointsChanged',
             'openVertexWindow',
             'closeVertexWindow',
-            'renderVertexWindow',
+            'buildVertexWindow',
+            'syncVertexWindow',
+            'createVertexRow',
             'onVertexInput',
-            'onVertexDelete'
+            'onVertexDelete',
+            'onVertexAddMid',
+            'onVertexClear',
+            'onVertexFinish'
         ]);
     }
     componentDidMount () {
         if (this.props.isPolyRoundModeActive) this.activateTool(this.props);
     }
 
+    /**
+     * The vertex list lives in a floating window so the tool's toolbar row keeps
+     * its normal height (a taller toolbar shrinks the canvas container, which
+     * used to leave paper.js' view size stale and stretch the canvas bitmap).
+     * The window is two-way synced with the canvas: clicking on the board adds
+     * rows, editing a row moves the marker, dragging a marker updates the row.
+     */
     openVertexWindow () {
         if (!WindowManager) return;
         if (this._vertexWindow) {
-            this.renderVertexWindow();
+            this.syncVertexWindow();
             this._vertexWindow.show();
             return;
         }
@@ -74,66 +86,208 @@ class PolyRoundMode extends React.Component {
             id: 'poly-round-vertices',
             title: '顶点坐标',
             width: 300,
-            height: 360,
-            minWidth: 220,
-            minHeight: 240,
+            height: 380,
+            minWidth: 240,
+            minHeight: 200,
             onClose: () => {
                 this._vertexWindow = null;
+                this._vertexRoot = null;
+                this._vertexRows = null;
+                this._vertexCount = null;
+                this._vertexEmpty = null;
+                this._vertexFooter = null;
             }
         });
-        this.renderVertexWindow();
+        this.buildVertexWindow();
+        // createWindow() builds the window hidden — it has to be shown explicitly.
+        this._vertexWindow.show();
     }
 
     closeVertexWindow () {
         if (this._vertexWindow) {
-            try { this._vertexWindow.close(); } catch (_e) {}
+            try { this._vertexWindow.close(); } catch (_e) { /* already gone */ }
             this._vertexWindow = null;
         }
+        this._vertexRoot = null;
+        this._vertexRows = null;
+        this._vertexCount = null;
+        this._vertexEmpty = null;
+        this._vertexFooter = null;
     }
 
-    renderVertexWindow () {
+    buildVertexWindow () {
         if (!this._vertexWindow) return;
-        const pts = (this.props.rawPoints || []).slice();
-        const content = document.createElement('div');
-        content.className = 'poly-round-vertex-window';
-        content.style.cssText = 'padding:12px;overflow:auto;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px;color:var(--ui-text-primary,#333);';
+        const doc = document;
 
-        if (pts.length === 0) {
-            content.innerHTML = '<div style="color:#888;padding:12px 0;text-align:center;">在画板上点一下开始选点<br/>切换模式或关闭此窗口即提交</div>';
-        } else {
-            content.innerHTML = '<div style="display:grid;grid-template-columns:auto 1fr 1fr auto;gap:4px 8px;align-items:center;margin-bottom:8px;font-weight:500;">' +
-                '<span>#</span><span>X</span><span>Y</span><span></span></div>';
-            pts.forEach((p, i) => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display:grid;grid-template-columns:auto 1fr 1fr auto;gap:4px 8px;align-items:center;margin-bottom:6px;';
-                row.innerHTML =
-                    `<span style="color:#888;">${i + 1}</span>` +
-                    `<input data-idx="${i}" data-axis="x" type="number" step="any" value="${p.x.toFixed(1)}" style="width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid var(--ui-black-transparent,#ccc);border-radius:4px;background:var(--ui-modal-background,#fff);color:inherit;font:inherit;">` +
-                    `<input data-idx="${i}" data-axis="y" type="number" step="any" value="${p.y.toFixed(1)}" style="width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid var(--ui-black-transparent,#ccc);border-radius:4px;background:var(--ui-modal-background,#fff);color:inherit;font:inherit;">` +
-                    `<button data-idx="${i}" class="del" title="删除此顶点" style="padding:2px 6px;border:none;background:transparent;color:#e64a4a;cursor:pointer;font:inherit;">✕</button>`;
-                content.appendChild(row);
-            });
-            content.addEventListener('input', ev => {
-                const t = ev.target;
-                if (!t || t.tagName !== 'INPUT') return;
-                const idx = parseInt(t.dataset.idx, 10);
-                const axis = t.dataset.axis;
-                if (!axis) return;
-                this.onVertexInput(idx, axis, parseFloat(t.value));
-            });
-            content.addEventListener('click', ev => {
-                const t = ev.target;
-                if (!t || !t.classList.contains('del')) return;
-                this.onVertexDelete(parseInt(t.dataset.idx, 10));
-            });
-        }
+        const root = doc.createElement('div');
+        root.className = 'poly-round-vertex-window';
+        root.style.cssText = [
+            'display:flex', 'flex-direction:column', 'height:100%', 'box-sizing:border-box',
+            'padding:10px', 'gap:8px',
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
+            'font-size:13px', 'color:var(--text-primary,#333)'
+        ].join(';');
+
+        const head = doc.createElement('div');
+        head.style.cssText = 'display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;';
+        const count = doc.createElement('span');
+        count.style.cssText = 'font-weight:600;';
+        const hint = doc.createElement('span');
+        hint.style.cssText = 'font-size:11px;color:var(--looks-secondary,#888);';
+        hint.textContent = '在画板上点一下添加顶点，双向实时同步';
+        head.appendChild(count);
+        head.appendChild(hint);
+
+        const empty = doc.createElement('div');
+        empty.style.cssText = 'flex:1 1 auto;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--looks-secondary,#888);font-size:12px;';
+        empty.textContent = '在画板上点一下开始选点';
+
+        const rows = doc.createElement('div');
+        rows.style.cssText = 'flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:4px;';
+
+        const footer = doc.createElement('div');
+        footer.style.cssText = 'display:flex;gap:6px;flex:0 0 auto;';
+
+        const button = (action, label, title) => {
+            const btn = doc.createElement('button');
+            btn.type = 'button';
+            btn.dataset.action = action;
+            btn.textContent = label;
+            btn.title = title;
+            btn.style.cssText = 'flex:1 1 0;padding:4px 6px;border:1px solid var(--ui-black-transparent,#ccc);border-radius:4px;background:var(--ui-modal-background,#fff);color:inherit;font:inherit;cursor:pointer;';
+            return btn;
+        };
+        footer.appendChild(button('mid', '添加中间点', '在最后两点之间插入一个顶点'));
+        footer.appendChild(button('clear', '清空', '删除所有顶点'));
+        footer.appendChild(button('finish', '完成', '提交为图形'));
+
+        // Delegated handlers — rows are recycled, so per-row listeners would leak.
+        rows.addEventListener('input', ev => {
+            const target = ev.target;
+            if (!target || target.tagName !== 'INPUT' || !target.dataset.axis) return;
+            const idx = parseInt(target.parentNode.dataset.row, 10);
+            const value = parseFloat(target.value);
+            if (isNaN(idx) || !isFinite(value)) return;
+            this.onVertexInput(idx, target.dataset.axis, value);
+        });
+        rows.addEventListener('click', ev => {
+            const target = ev.target;
+            if (!target || target.dataset.role !== 'delete') return;
+            const idx = parseInt(target.parentNode.dataset.row, 10);
+            if (isNaN(idx)) return;
+            this.onVertexDelete(idx);
+        });
+        footer.addEventListener('click', ev => {
+            const action = ev.target && ev.target.dataset && ev.target.dataset.action;
+            if (action === 'mid') this.onVertexAddMid();
+            else if (action === 'clear') this.onVertexClear();
+            else if (action === 'finish') this.onVertexFinish();
+        });
+
+        root.appendChild(head);
+        root.appendChild(empty);
+        root.appendChild(rows);
+        root.appendChild(footer);
+
+        this._vertexRoot = root;
+        this._vertexCount = count;
+        this._vertexEmpty = empty;
+        this._vertexRows = rows;
+        this._vertexFooter = footer;
+
         try {
-            this._vertexWindow.setContent(content);
+            this._vertexWindow.setContent(root);
         } catch (_e) {
-            // Fallback: wipe and replace
+            // Fallback for window implementations without setContent()
             const c = this._vertexWindow.contentElement;
             while (c && c.firstChild) c.removeChild(c.firstChild);
-            c && c.appendChild(content);
+            if (c) c.appendChild(root);
+        }
+        this.syncVertexWindow();
+    }
+
+    createVertexRow (index) {
+        const doc = document;
+        const row = doc.createElement('div');
+        row.dataset.row = String(index);
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+        const indexEl = doc.createElement('span');
+        indexEl.dataset.role = 'index';
+        indexEl.style.cssText = 'min-width:18px;text-align:center;color:var(--looks-secondary,#888);font-variant-numeric:tabular-nums;';
+
+        const inputCss = 'flex:1 1 0;min-width:0;box-sizing:border-box;padding:3px 5px;' +
+            'border:1px solid var(--ui-black-transparent,#ccc);border-radius:4px;' +
+            'background:var(--ui-modal-background,#fff);color:inherit;font:inherit;';
+        const xInput = doc.createElement('input');
+        xInput.type = 'number';
+        xInput.step = 'any';
+        xInput.dataset.axis = 'x';
+        xInput.title = 'X';
+        xInput.style.cssText = inputCss;
+        const yInput = doc.createElement('input');
+        yInput.type = 'number';
+        yInput.step = 'any';
+        yInput.dataset.axis = 'y';
+        yInput.title = 'Y';
+        yInput.style.cssText = inputCss;
+
+        const del = doc.createElement('button');
+        del.type = 'button';
+        del.dataset.role = 'delete';
+        del.textContent = '✕';
+        del.title = '删除此顶点';
+        del.style.cssText = 'flex:0 0 auto;padding:2px 6px;border:none;background:transparent;color:#e64a4a;cursor:pointer;font:inherit;';
+
+        row.appendChild(indexEl);
+        row.appendChild(xInput);
+        row.appendChild(yInput);
+        row.appendChild(del);
+        return row;
+    }
+
+    /**
+     * Reconcile the window with the current point list *in place*: rows are
+     * created / removed as needed and values are written only into inputs the
+     * user isn't currently editing, so typing a coordinate never gets its focus
+     * (or caret) stolen by the round trip through Redux.
+     */
+    syncVertexWindow () {
+        if (!this._vertexWindow || !this._vertexRows) return;
+        const pts = this.props.rawPoints || [];
+        const rows = this._vertexRows;
+
+        while (rows.children.length > pts.length) {
+            rows.removeChild(rows.lastChild);
+        }
+        for (let i = rows.children.length; i < pts.length; i++) {
+            rows.appendChild(this.createVertexRow(i));
+        }
+        for (let i = 0; i < pts.length; i++) {
+            const row = rows.children[i];
+            row.dataset.row = String(i);
+            const indexEl = row.querySelector('[data-role="index"]');
+            if (indexEl) indexEl.textContent = String(i + 1);
+            const xInput = row.querySelector('input[data-axis="x"]');
+            const yInput = row.querySelector('input[data-axis="y"]');
+            if (xInput && document.activeElement !== xInput) xInput.value = pts[i].x.toFixed(1);
+            if (yInput && document.activeElement !== yInput) yInput.value = pts[i].y.toFixed(1);
+        }
+
+        if (this._vertexCount) this._vertexCount.textContent = `顶点坐标 (${pts.length})`;
+        if (this._vertexEmpty) this._vertexEmpty.style.display = pts.length ? 'none' : 'flex';
+        rows.style.display = pts.length ? 'flex' : 'none';
+        if (this._vertexFooter) {
+            const setEnabled = (action, enabled) => {
+                const btn = this._vertexFooter.querySelector(`[data-action="${action}"]`);
+                if (!btn) return;
+                btn.disabled = !enabled;
+                btn.style.opacity = enabled ? '1' : '0.5';
+                btn.style.cursor = enabled ? 'pointer' : 'default';
+            };
+            setEnabled('mid', pts.length > 0);
+            setEnabled('clear', pts.length > 0);
+            setEnabled('finish', pts.length >= 2);
         }
     }
 
@@ -141,14 +295,30 @@ class PolyRoundMode extends React.Component {
         if (!isFinite(value)) return;
         const pts = (this.props.rawPoints || []).slice();
         if (index < 0 || index >= pts.length) return;
-        const p = Object.assign({}, pts[index]);
-        p[axis] = value;
-        this.props.onSetPoint(index, p.x, p.y);
+        const point = Object.assign({}, pts[index]);
+        point[axis] = value;
+        this.props.onSetPoint(index, point.x, point.y);
     }
 
     onVertexDelete (index) {
         this.props.onRemovePoint(index);
-        this.renderVertexWindow();
+    }
+
+    onVertexAddMid () {
+        if (!this.tool) return;
+        const pts = this.tool.getRawPoints();
+        if (!pts.length) return;
+        const last = pts[pts.length - 1];
+        const prev = pts.length > 1 ? pts[pts.length - 2] : last;
+        this.tool.addPointAt(prev.add(last).divide(2));
+    }
+
+    onVertexClear () {
+        if (this.tool) this.tool.clear();
+    }
+
+    onVertexFinish () {
+        if (this.tool) this.tool.finish();
     }
     componentWillReceiveProps (nextProps) {
         if (this.tool) {
@@ -171,12 +341,11 @@ class PolyRoundMode extends React.Component {
                 this.tool.setShowItems(nextProps.showItems);
             }
 
-            // Re-render floating vertex editor whenever raw points change
-            const prevPts = this.props.rawPoints || [];
-            const nextPts = nextProps.rawPoints || [];
-            if (this._vertexWindow && JSON.stringify(prevPts) !== JSON.stringify(nextPts)) {
-                this.renderVertexWindow();
-            }
+            // Keep the floating vertex editor in sync with the canvas (a vertex
+            // added/dragged on the board shows up here; editing here moves the
+            // marker). Values are reconciled in place so the input the user is
+            // typing in keeps its focus and caret.
+            this.syncVertexWindow();
 
             // Imperative actions from toolbar (finish / setPoint / removePoint / clear / addMid)
             const pending = nextProps.pendingAction;

@@ -1269,108 +1269,15 @@ const ModeToolsComponent = props => {
         const cornerStyle = props.polyRoundCornerStyle;
         const limitRadius = props.polyRoundLimitRadius;
         const showItems = props.polyRoundShowItems || 'both';
-        const collapse = props.polyRoundCollapse;
-        const autoOrder = props.polyRoundAutoOrder !== false;
         const rawPoints = props.polyRoundRawPoints || [];
 
-        // Only respect the *explicit* collapse flag from Redux — no automatic
-        // collapse based on point count. User has a +/- button to toggle.
-        const autoCollapse = !!collapse;
-
-        // Theme-aware colors via CSS variables (Turbowarp writes these to
-        // document.body when the user switches themes). Fallbacks match the
-        // light-theme values so older builds still look correct.
-        const CARD_BG    = 'var(--ui-tertiary, #fafafa)';
-        const CARD_BDR   = 'var(--ui-secondary, #ccc)';
-        const CARD_FG    = 'var(--text-primary, #111)';
-        const MUTED      = 'var(--looks-secondary, #888)';
-        const INPUT_BG   = 'var(--ui-primary, #fff)';
-        const HINT       = 'var(--looks-secondary, #888)';
-
-        // Input refs used with a "defaultValue + blur commit" pattern so the
-        // user can type/delete/paste/IME-edit freely — no React controlled-
-        // component fight-back while editing.
-        const xRefs = [];
-        const yRefs = [];
-
-        const pointCard = (pt, idx) => (
-            <div
-                key={idx}
-                style={{
-                    display:'flex', gap:'3px', alignItems:'center',
-                    fontSize:'11px', lineHeight:'18px', fontFamily:'monospace',
-                    border:'1px solid ' + CARD_BDR,
-                    borderRadius:'3px', padding:'2px 3px',
-                    background: CARD_BG, color: CARD_FG
-                }}
-            >
-                <span style={{minWidth:'16px', color: MUTED, textAlign:'center'}}>{idx+1}</span>
-                <span style={{color: MUTED}}>x</span>
-                <input
-                    ref={r => { if (r) xRefs[idx] = r; }}
-                    type="number" step="0.1"
-                    defaultValue={Number(pt.x.toFixed(1))}
-                    onFocus={e => e.target.select()}
-                    onBlur={e => {
-                        const v = e.target.value;
-                        if (v === '' || v === '-' || v === '.' || v === '-.') { e.target.value = Number(pt.x.toFixed(1)); return; }
-                        const n = Number(v);
-                        if (isNaN(n)) { e.target.value = Number(pt.x.toFixed(1)); return; }
-                        props.onPolyRoundSetPoint(idx, n, pt.y);
-                    }}
-                    onKeyDown={e => {
-                        if (e.key === 'Enter') e.target.blur();
-                        else if (e.key === 'Escape') {
-                            e.target.value = Number(pt.x.toFixed(1));
-                            e.target.blur();
-                        }
-                    }}
-                    style={{
-                        width:'50px', fontSize:'11px', padding:'0 2px',
-                        fontFamily:'monospace',
-                        border:'1px solid ' + CARD_BDR,
-                        borderRadius:'2px',
-                        background: INPUT_BG,
-                        color: CARD_FG
-                    }}
-                />
-                <span style={{color: MUTED}}>y</span>
-                <input
-                    ref={r => { if (r) yRefs[idx] = r; }}
-                    type="number" step="0.1"
-                    defaultValue={Number(pt.y.toFixed(1))}
-                    onFocus={e => e.target.select()}
-                    onBlur={e => {
-                        const v = e.target.value;
-                        if (v === '' || v === '-' || v === '.' || v === '-.') { e.target.value = Number(pt.y.toFixed(1)); return; }
-                        const n = Number(v);
-                        if (isNaN(n)) { e.target.value = Number(pt.y.toFixed(1)); return; }
-                        props.onPolyRoundSetPoint(idx, pt.x, n);
-                    }}
-                    onKeyDown={e => {
-                        if (e.key === 'Enter') e.target.blur();
-                        else if (e.key === 'Escape') {
-                            e.target.value = Number(pt.y.toFixed(1));
-                            e.target.blur();
-                        }
-                    }}
-                    style={{
-                        width:'50px', fontSize:'11px', padding:'0 2px',
-                        fontFamily:'monospace',
-                        border:'1px solid ' + CARD_BDR,
-                        borderRadius:'2px',
-                        background: INPUT_BG,
-                        color: CARD_FG
-                    }}
-                />
-                <button
-                    type="button"
-                    onClick={() => props.onPolyRoundRemovePoint(idx)}
-                    title="Delete vertex"
-                    style={{fontSize:'10px', padding:'0 3px', lineHeight:'14px', color:'#fff', background:'#e94560', border:'none', borderRadius:'2px', cursor:'pointer'}}
-                >×</button>
-            </div>
-        );
+        // Vertex coordinates are NOT rendered here anymore — they live in the
+        // floating "顶点坐标" window (see containers/poly-round-mode.jsx), which
+        // also keeps this toolbar row at its normal single-line height. A taller
+        // toolbar used to shrink the canvas container, which left paper.js'
+        // view size stale and stretched the canvas bitmap (flattened circles +
+        // offset taps + dropped touch events).
+        const HINT = 'var(--looks-secondary, #888)';
 
         return (
             <div className={classNames(props.className, styles.modeTools)} style={{flexWrap:'wrap', gap:'6px 10px', alignItems:'flex-start'}}>
@@ -1416,60 +1323,6 @@ const ModeToolsComponent = props => {
                 <span style={{fontStyle:'italic', fontSize:'11px', color: HINT}}>
                     {props.intl.formatMessage(messages.polyRoundHint)}
                 </span>
-
-                {/* Vertex coordinate card — INLINE, not forced to full width */}
-                <div
-                    title={props.intl.formatMessage(messages.polyRoundPoints)}
-                    style={{
-                        border:'1px solid ' + CARD_BDR, borderRadius:'4px', padding:'4px 6px',
-                        minWidth:'340px', maxWidth:'460px',
-                        background: CARD_BG, color: CARD_FG,
-                        maxHeight: autoCollapse ? '26px' : '260px',
-                        overflow:'auto', transition:'max-height 0.15s ease'
-                    }}
-                >
-                    <div style={{display:'flex', gap:'4px', alignItems:'center', justifyContent:'space-between', fontSize:'12px'}}>
-                        <span>{props.intl.formatMessage(messages.polyRoundPoints)} ({rawPoints.length})</span>
-                        <span style={{display:'inline-flex', gap:'2px'}}>
-                            <button type="button"
-                                onClick={props.onPolyRoundToggleCollapse}
-                                title={props.intl.formatMessage(messages.polyRoundCollapse)}
-                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
-                            >{autoCollapse ? '+' : '-'}</button>
-                            <button type="button"
-                                onClick={props.onPolyRoundToggleAutoOrder}
-                                title={autoOrder ? 'Auto-order ON — points snap to simple polygon (polar sort)' : 'Auto-order OFF — keep click order as-is'}
-                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px',
-                                    background: autoOrder ? '#4CAF50' : 'transparent',
-                                    color: autoOrder ? '#fff' : 'inherit',
-                                    border: autoOrder ? '1px solid #4CAF50' : '1px solid #ccc',
-                                    borderRadius:'2px'}}
-                            >⟳</button>
-                            <button type="button"
-                                onClick={props.onPolyRoundAddPoint}
-                                title={props.intl.formatMessage(messages.polyRoundAddPoint)}
-                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
-                            >+</button>
-                            <button type="button"
-                                onClick={props.onPolyRoundClear}
-                                title={props.intl.formatMessage(messages.polyRoundClear)}
-                                style={{fontSize:'11px', padding:'0 4px', lineHeight:'16px'}}
-                            >{props.intl.formatMessage(messages.polyRoundClear)}</button>
-                        </span>
-                    </div>
-                    {!autoCollapse && (
-                        <div style={{
-                            marginTop:'4px',
-                            display:'grid',
-                            // Fixed 2 columns so card 3 is directly under card 1,
-                            // card 4 under card 2, etc. (column-first stacking).
-                            gridTemplateColumns:'repeat(2, minmax(150px, 1fr))',
-                            gap:'4px'
-                        }}>
-                            {rawPoints.map(pointCard)}
-                        </div>
-                    )}
-                </div>
 
                 {rawPoints.length >= 2 && (
                     <button type="button"

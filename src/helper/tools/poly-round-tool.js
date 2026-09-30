@@ -7,14 +7,22 @@ import NudgeTool from '../selection-tools/nudge-tool';
 import {getGuideLayer} from '../layer';
 
 /**
- * Visual-only poly-round vertex marker drawn with raw canvas primitives so it
- * stays a PERFECT circle regardless of the current view.matrix (zoom + pan
- * plus any CSS-size roundoff that would make scaleX !== scaleY and flatten a
- * paper.Path.Circle into an ellipse).
+ * Visual-only poly-round vertex marker.
  *
- * All sizes here are SCREEN PIXELS — the reshape tool's canvas-drawn segment
- * handles (radius = 4, stroke width = 2.5) use the same convention, so users
- * see ONE consistent "point" style across all vector tools.
+ * It is drawn exactly like paper.js' own segment handles (see paper-full.js
+ * `drawHandles` + `Item#_drawSelection`) so the points of this tool are
+ * pixel-identical to the ones the reshape tool shows on a selected path:
+ *   radius 4 (= paper.settings.handleSize / 2, which scratch-paint sets to 8)
+ *   fill   'rgba(255, 255, 255, 0.5)'
+ *   stroke 2.5px, '#009dec' (paper's fallback selection color)
+ *
+ * Two implementation details matter for correctness:
+ *   1. paper.js invokes `item.draw(ctx, param)` — the second argument is the
+ *      drawing *param* object (viewMatrix / pixelRatio / ...), NOT a matrix, so
+ *      we must not read `.a` / `.tx` from it.
+ *   2. We paint in view (screen) space with an explicit pixel-ratio transform,
+ *      which is the same space paper.js uses for its own handles. That keeps
+ *      the dot a perfect circle with a constant on-screen size at any zoom.
  */
 class PolyRoundMarker extends paper.Item {
     constructor (pos, index) {
@@ -26,30 +34,24 @@ class PolyRoundMarker extends paper.Item {
         this.guide = true;
         this.locked = true;
     }
-    getStrokeColor () {
-        try {
-            const first = paper.project.selectedItems && paper.project.selectedItems[0];
-            if (first && first.strokeColor && first.strokeColor.type === 'color') {
-                return first.strokeColor;
-            }
-        } catch (_e) { /* ignore */ }
-        return new paper.Color('#009dec');
-    }
-    draw (ctx, matrix) {
-        // matrix = view.matrix × (item.matrix = identity)
-        // Compute screen-space marker center...
-        const sx = this.position.x * matrix.a + this.position.y * matrix.c + matrix.tx;
-        const sy = this.position.x * matrix.b + this.position.y * matrix.d + matrix.ty;
-        // ...then paint entirely in canvas-pixel identity so arc numbers stay
-        // pure screen pixels — never warped by the current zoom matrix.
+    draw (ctx, param) {
+        // Overriding `draw` bypasses paper's own visibility handling, so honour
+        // the "show markers / guide / none" toggle ourselves.
+        if (!this.visible) return;
+        const view = paper.view;
+        if (!view) return;
+        const screen = view.projectToView(this.position);
+        const pixelRatio = (param && param.pixelRatio) || view.pixelRatio || 1;
         ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        // ctx normally holds view-matrix × pixel-ratio; reset to a clean
+        // pixel-ratio-only transform so `screen` is measured in CSS pixels.
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         ctx.beginPath();
-        ctx.arc(sx, sy, 4, 0, Math.PI * 2, true);
+        ctx.arc(screen.x, screen.y, 4, 0, Math.PI * 2, true);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.fill();
         ctx.lineWidth = 2.5;
-        ctx.strokeStyle = this.getStrokeColor().toCanvasStyle(ctx);
+        ctx.strokeStyle = '#009dec';
         ctx.stroke();
         ctx.restore();
     }
@@ -274,24 +276,6 @@ class PolyRoundTool extends paper.Tool {
     getRawPoints () { return this._rawPoints.slice(); }
 
     addPointAt (p) {
-        // Diagnostic log: print the event-point mapping every time a vertex is
-        // created so we can compare world coords, canvas rect and the raw DOM
-        // clientX/Y the user actually touched. Offsets here point straight at
-        // whatever's causing the "偏上" symptom.
-        try {
-            const canvas = paper.view.element;
-            const rect = canvas.getBoundingClientRect();
-            const zoom = paper.view.zoom;
-            const mat = paper.view.matrix;
-            const sx = mat.a * p.x + mat.c * p.y + mat.tx;
-            const sy = mat.b * p.x + mat.d * p.y + mat.ty;
-            console.log('[PolyRound] addPointAt world=(%d,%d)→screen=(%d,%d) zoom=%d rect=(%d,%d,%d,%d) canvas=(%d,%d)',
-                Math.round(p.x), Math.round(p.y), Math.round(sx), Math.round(sy),
-                Number(zoom).toFixed(3),
-                Math.round(rect.left), Math.round(rect.top),
-                Math.round(rect.width), Math.round(rect.height),
-                canvas.width, canvas.height);
-        } catch (_e) { /* ignore */ }
         this._rawPoints.push(p.clone());
         this._rebuildMarkers();
         this._regeneratePreview();
