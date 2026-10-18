@@ -191,6 +191,67 @@ function buildRoundedPath (rawPoints, radius, limitRadius, cornerStyle) {
  * show/hide them. onUpdateImage fires ONLY at finish so the undo stack
  * stays compact.
  */
+/**
+ * Polygonize a cloud of click-ordered points into an order that yields
+ * a non-self-intersecting closed polygon whenever possible.
+ *
+ * Strategy (极角排序法 Polar Angle Sort —— 用户指定):
+ *   1. Centroid = arithmetic mean of all input points
+ *   2. angle(p) = atan2(p.y - cy, p.x - cx)
+ *      → 按 angle 升序排。点绕质心依次排布。
+ *   3. 同极角再按距质心近→远排（处理极近共线点）
+ *   4. 退化保护：若所有点都共线则直接回退原顺序
+ *   5. 自交检测（O(n^2) Segment Intersect）：若极角排序结果发现交叉
+ *      则回退原顺序（避免造成比原点击顺序更差的结果）。
+ */
+function polygonize (rawPoints) {
+    if (!rawPoints || rawPoints.length < 3) return rawPoints.slice();
+    const pts = rawPoints.slice();
+    const n = pts.length;
+
+    let cx = 0, cy = 0;
+    for (const p of pts) { cx += p.x; cy += p.y; }
+    cx /= n; cy /= n;
+
+    const angled = pts.map((p, i) => ({
+        i, p,
+        angle: Math.atan2(p.y - cy, p.x - cx),
+        dist:  (p.x - cx) ** 2 + (p.y - cy) ** 2
+    }));
+    angled.sort((a, b) => {
+        if (Math.abs(a.angle - b.angle) > 1e-6) return a.angle - b.angle;
+        return a.dist - b.dist;
+    });
+
+    const sorted = angled.map(o => o.p);
+
+    // 共线退化检测
+    const p0 = sorted[0], p1 = sorted[1];
+    const onLine = sorted.every((p, i) => {
+        if (i < 2) return true;
+        return Math.abs((p1.x - p0.x) * (p.y - p0.y) - (p1.y - p0.y) * (p.x - p0.x)) < 1e-4;
+    });
+    if (onLine) return rawPoints.slice();
+
+    // 自交检测：只检查"不相邻的边对"
+    const segIntersects = (p1, p2, p3, p4) => {
+        const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+        return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+    };
+    let selfIntersects = false;
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 2; j < n; j++) {
+            if (i === 0 && j === n - 1) continue;
+            const a1 = sorted[i],       a2 = sorted[(i + 1) % n];
+            const b1 = sorted[j],       b2 = sorted[(j + 1) % n];
+            if (segIntersects(a1, a2, b1, b2)) { selfIntersects = true; break; }
+        }
+        if (selfIntersects) break;
+    }
+
+    return selfIntersects ? rawPoints.slice() : sorted;
+}
+
 class PolyRoundTool extends paper.Tool {
     static get SNAP_TOLERANCE () { return 18; } // generous for touch
     static get TOLERANCE () { return 2; }
@@ -227,6 +288,7 @@ class PolyRoundTool extends paper.Tool {
         this._preview = null;
         this._draggingIndex = -1;
         this._active = false;
+        this._orderedPoints = []; // 极角排序后的连接顺序
     }
 
     setColorState (colorState) {
@@ -247,12 +309,13 @@ class PolyRoundTool extends paper.Tool {
 
     addPointAt (p) {
         this._rawPoints.push(p.clone());
+        this._syncOrdered();
         this._rebuildMarkers();
         this._regeneratePreview();
         this._emitPointsChanged();
     }
 
-    clear () { this._discardLive(); this._emitPointsChanged(); }
+    clear () { this._discardLive(); this._orderedPoints = []; this._emitPointsChanged(); }
 
     setPointAt (index, x, y) {
         if (index < 0 || index >= this._rawPoints.length) return;
@@ -268,6 +331,7 @@ class PolyRoundTool extends paper.Tool {
         const marker = this._markers.splice(index, 1)[0];
         if (marker) marker.remove();
         this._rawPoints.splice(index, 1);
+        this._syncOrdered();
         this._markers.forEach((m, i) => { m.data.index = i; });
         this._regeneratePreview();
         this._emitPointsChanged();
@@ -352,6 +416,11 @@ class PolyRoundTool extends paper.Tool {
         this._applyVisibility();
     }
 
+    /** 当原始点集拓扑变化（加/删/改数量）时重算极角排序 */
+    _syncOrdered () {
+        this._orderedPoints = polygonize(this._rawPoints);
+    }
+
     _ensureGuide () {
         if (this._guide) return;
         this._guide = new paper.Path();
@@ -364,13 +433,16 @@ class PolyRoundTool extends paper.Tool {
     }
 
     _regeneratePreview () {
+        if (this._orderedPoints.length !== this._rawPoints.length) {
+            this._syncOrdered();
+        }
         if (this._rawPoints.length < 2) {
             if (this._preview) { this._preview.remove(); this._preview = null; }
             if (this._guide) this._guide.removeSegments();
             return;
         }
         const rounded = buildRoundedPath(
-            this._rawPoints, this.radius, this.limitRadius, this.cornerStyle
+            this._orderedPoints, this.radius, this.limitRadius, this.cornerStyle
         );
         if (!rounded) return;
 
@@ -397,7 +469,7 @@ class PolyRoundTool extends paper.Tool {
 
         this._ensureGuide();
         this._guide.removeSegments();
-        this._guide.setSegments(this._rawPoints);
+        this._guide.setSegments(this._orderedPoints);
         this._guide.closed = true;
     }
 
@@ -406,7 +478,7 @@ class PolyRoundTool extends paper.Tool {
         if (this._guide) { this._guide.remove(); this._guide = null; }
         this._markers.forEach(m => m.remove());
         this._markers = [];
-        this._rawPoints = [];
+        this._rawPoints = []; this._orderedPoints = [];
         this._draggingIndex = -1;
     }
 
