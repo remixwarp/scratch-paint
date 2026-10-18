@@ -373,34 +373,74 @@ class PolyRoundTool extends paper.Tool {
         const path = this._preview;
         this._preview = null;
 
-        // Drop guide + markers first
+        // ---- 1) Drop guide + markers + raw/ordered points ----
         if (this._guide) { this._guide.remove(); this._guide = null; }
         this._markers.forEach(m => m.remove());
         this._markers = [];
         this._rawPoints = [];
+        this._orderedPoints = [];
 
-        // Safety: if the path somehow ended up as a CompoundPath
-        // (paper sometimes produces them for exotic arc strings),
-        // flatten it to a single flat Path so nothing extra shows up.
+        // ---- 2) Flatten: strip CompoundPath down to ONE real child ----
+        // paper.js sometimes auto-wraps our rounded path in a CompoundPath
+        // for exotic arc parameters. When it does, children order is NOT
+        // guaranteed — the first child can be a guide-only stroke.  So we
+        // MUST pick by criterion: !guide AND has fill AND largest area.
         let finalPath = path;
-        if (path instanceof paper.CompoundPath) {
-            // Take the first child — it's always our real shape
-            const firstChild = path.children[0];
-            if (firstChild) {
-                path.remove();
-                finalPath = firstChild;
+        if (path instanceof paper.CompoundPath && path.children.length > 0) {
+            let bestIdx = -1, bestArea = -Infinity;
+            for (let i = 0; i < path.children.length; i++) {
+                const c = path.children[i];
+                if (c.guide) continue;
+                if (!c.fillColor) continue;
+                const area = Math.abs(c.bounds.width * c.bounds.height) || 0;
+                if (area > bestArea) { bestArea = area; bestIdx = i; }
             }
+            // Fallback: any non-guide child (pure stroke case)
+            if (bestIdx < 0) {
+                for (let i = 0; i < path.children.length; i++) {
+                    if (!path.children[i].guide) { bestIdx = i; break; }
+                }
+            }
+            if (bestIdx >= 0) {
+                const keeper = path.children[bestIdx];
+                // Detach keeper BEFORE compound removal so it survives
+                path.removeChildren([keeper]);
+                keeper.layer = paper.project.activeLayer;
+                path.remove();
+                finalPath = keeper;
+            } else {
+                // Nothing salvageable — drop everything, bubble up nothing
+                path.remove();
+                return false;
+            }
+        } else if (path instanceof paper.CompoundPath) {
+            // CompoundPath with zero children — garbage-collect it
+            path.remove();
+            return false;
         }
-        // Safety-2: remove any children on a Path that shouldn't have them
+
+        // ---- 3) Final-path cleanup (force it to a clean non-guide Path) ----
+        finalPath.guide = false;
         if (finalPath.children && finalPath.children.length > 0) {
             finalPath.children.forEach(c => c.remove());
         }
-
-        // Safety-3: ensure it lives on project.activeLayer (not a sub-layer)
         if (finalPath.layer !== paper.project.activeLayer) {
             paper.project.activeLayer.addChild(finalPath);
         }
 
+        // ---- 4) Layer-wide sweep: kill any stray helper items ----
+        // Catches anything the previous steps might have missed — paper
+        // sometimes re-parent items during path construction.
+        paper.project.activeLayer.traverse(item => {
+            if (item === finalPath) return;
+            const d = item.data;
+            if (d && (d.isPolyRoundGuide || d.isPolyRoundMarker || d.isHelperItem || d.isPolyRoundLive)) {
+                item.remove();
+            }
+            if (item.guide) item.guide = false;
+        });
+
+        // ---- 5) Finalize selection + Redux ----
         paper.project.deselectAll();
         delete finalPath.data.isPolyRoundLive;
         delete finalPath.data.isHelperItem;
