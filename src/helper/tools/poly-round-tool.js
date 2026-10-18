@@ -429,16 +429,25 @@ class PolyRoundTool extends paper.Tool {
         }
 
         // ---- 4) Layer-wide sweep: kill any stray helper items ----
-        // Catches anything the previous steps might have missed — paper
-        // sometimes re-parent items during path construction.
-        paper.project.activeLayer.traverse(item => {
-            if (item === finalPath) return;
-            const d = item.data;
-            if (d && (d.isPolyRoundGuide || d.isPolyRoundMarker || d.isHelperItem || d.isPolyRoundLive)) {
-                item.remove();
+        // ⚠️ Turbowarp fork 的 @turbowarp/paper (0.12.202407262155) 没有
+        //  Item.prototype.traverse()，不能用 paper.project.activeLayer.traverse()，
+        //  会抛 "activeLayer.traverse is not a function" 把整个 GUI 炸掉。
+        //  换成手写递归遍历 children — Turbowarp paper.js 保留了 children 数组。
+        const sweepForHelperItems = (parent) => {
+            if (!parent || !parent.children) return;
+            for (let i = parent.children.length - 1; i >= 0; i--) {
+                const item = parent.children[i];
+                if (item === finalPath) continue;
+                const d = item.data;
+                if (d && (d.isPolyRoundGuide || d.isPolyRoundMarker || d.isHelperItem || d.isPolyRoundLive)) {
+                    item.remove();
+                    continue;
+                }
+                if (item.guide) item.guide = false;
+                if (item.children && item.children.length) sweepForHelperItems(item);
             }
-            if (item.guide) item.guide = false;
-        });
+        };
+        sweepForHelperItems(paper.project.activeLayer);
 
         // ---- 5) Finalize selection + Redux ----
         paper.project.deselectAll();
