@@ -249,6 +249,25 @@ function polygonize (rawPoints) {
         if (selfIntersects) break;
     }
 
+    // === 关键：winding 方向必须与 rawPoints 保持一致 ===
+    // 极角升序输出的是绝对逆时针（数学坐标），但 rawPoints 的
+    // winding 取决于用户点选顺序——顺时针或逆时针都可能。
+    // 如果方向翻了，buildRoundedPath 里 sweepSign 反着算，
+    // 圆角就会反包成自交/透明多余多边形。
+    const signedArea = pts => {
+        let a = 0;
+        for (let i = 0; i < pts.length; i++) {
+            const j = (i + 1) % pts.length;
+            a += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+        }
+        return a / 2;
+    };
+    const rawA = signedArea(rawPoints);
+    const ordA = signedArea(sorted);
+    if (Math.sign(rawA) !== Math.sign(ordA) && Math.abs(rawA) > 1) {
+        sorted.reverse();   // 反序 → winding 翻回来
+    }
+
     return selfIntersects ? rawPoints.slice() : sorted;
 }
 
