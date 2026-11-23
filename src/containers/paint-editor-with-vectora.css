@@ -1,0 +1,81 @@
+.wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.switchButton {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 14px;
+    border: 1px solid rgba(127, 127, 127, .45);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+    cursor: pointer;
+    user-select: none;
+}
+.switchButton.dark {
+    background: #303133;
+    color: #e3e3e4;
+}
+.switchButton.light {
+    background: #fff;
+    color: #303236;
+}
+.switchButton:hover {
+    filter: brightness(1.12);
+}
+.switchDot {
+    font-size: 12px;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+}
+.overlay.dark {
+    background: #242527;
+}
+.overlay.light {
+    background: #e5e6e8;
+}
+.overlay iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+.backButton {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 14px;
+    border: 1px solid #ec956e;
+    background: #ec956e;
+    color: #232323;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+    cursor: pointer;
+}
+.backButton:hover {
+    filter: brightness(1.08);
+}
+.backArrow {
+    font-size: 16px;
+    line-height: 10px;
+}
