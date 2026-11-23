@@ -4498,7 +4498,8 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
             this.editor.fitAll();
             this.refreshUI();
             this.renderer.ready.then(() => { this.updateEngine(); this.invalidate(); });
-            this.restoreSession();
+            // RemixWarp host: skip localStorage restore so the host-injected costume is authoritative.
+            if (!window.__RW_HOSTED__) this.restoreSession(); else this.setSaveState('Synced with editor');
         }
         requestUI() { if (this.uiQueued)
             return; this.uiQueued = true; queueMicrotask(() => { this.uiQueued = false; this.refreshUI(); }); }
@@ -5282,6 +5283,8 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
         } }; }
     }
     V.App = App;
+    /* RemixWarp host bridge: detect embedding before App construction. */
+    window.__RW_HOSTED__ = (window.parent !== window);
     window.vectora = new App();
 
 /* ---- RemixWarp host bridge (added for costume/backdrop editor integration) ---- */

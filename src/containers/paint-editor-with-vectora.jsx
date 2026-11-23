@@ -9,7 +9,8 @@ import styles from './paint-editor-with-vectora.css';
 /**
  * 外层包装：在原造型/背景画板之上新增「Editor」矢量画板切换。
  * - 原画笔功能完全保留，默认显示
- * - 点击右上「Editor」按钮切到 Vectora（完整功能，非精简），自动载入当前造型
+ * - 切换按钮作为行内控件放在左下角「转换位图/矢量图」按钮右侧（通过 props.modeControls 注入），不遮挡文字
+ * - 两种模式的按钮始终都在同一位置：经典画板 / Editor 矢量画板
  * - Vectora 内编辑实时回写造型（onUpdateImage），舞台同步显示
  * - 主题与原编辑器保持一致（dark/light）
  */
@@ -17,16 +18,38 @@ class PaintEditorWithVectora extends React.Component {
     constructor (props) {
         super(props);
         this.state = {showVectora: false};
-        this.handleToggle = this.handleToggle.bind(this);
-        this.handleBack = this.handleBack.bind(this);
+        this.handleClassic = this.handleClassic.bind(this);
+        this.handleVectora = this.handleVectora.bind(this);
     }
 
-    handleToggle () {
+    handleClassic () {
+        this.setState({showVectora: false});
+    }
+
+    handleVectora () {
         this.setState({showVectora: true});
     }
 
-    handleBack () {
-        this.setState({showVectora: false});
+    renderModeControls (theme) {
+        const {showVectora} = this.state;
+        return (
+            <span className={classNames(styles.modeControls, styles[theme])}>
+                <button
+                    className={classNames(styles.modeButton, !showVectora && styles.active)}
+                    title="Classic Scratch paint editor"
+                    onClick={this.handleClassic}
+                >
+                    Scratch
+                </button>
+                <button
+                    className={classNames(styles.modeButton, showVectora && styles.active)}
+                    title="Editor — full vector design studio"
+                    onClick={this.handleVectora}
+                >
+                    <span className={styles.modeDot}>✎</span> Editor
+                </button>
+            </span>
+        );
     }
 
     render () {
@@ -34,17 +57,12 @@ class PaintEditorWithVectora extends React.Component {
         const theme = this.props.theme === 'light' || this.props.theme === 'dark' ? this.props.theme : 'dark';
         return (
             <div className={styles.wrapper}>
-                <BasePaintEditor {...this.props} />
+                <BasePaintEditor
+                    {...this.props}
+                    modeControls={this.renderModeControls(theme)}
+                />
                 {showVectora ? (
                     <div className={classNames(styles.overlay, styles[theme])}>
-                        <button
-                            className={styles.backButton}
-                            title="Back to the classic editor"
-                            onClick={this.handleBack}
-                        >
-                            <span className={styles.backArrow}>‹</span>
-                            <span>Scratch</span>
-                        </button>
                         <VectoraEditor
                             image={this.props.image}
                             imageId={this.props.imageId}
@@ -55,16 +73,7 @@ class PaintEditorWithVectora extends React.Component {
                             onUpdateImage={this.props.onUpdateImage}
                         />
                     </div>
-                ) : (
-                    <button
-                        className={classNames(styles.switchButton, styles[theme])}
-                        title="Open Editor — full vector design studio"
-                        onClick={this.handleToggle}
-                    >
-                        <span className={styles.switchDot}>✎</span>
-                        <span>Editor</span>
-                    </button>
-                )}
+                ) : null}
             </div>
         );
     }

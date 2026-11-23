@@ -291,6 +291,8 @@ const PaintEditorComponent = props => (
                                 </span>
                             </Button> : null
                     }
+                    {/* RemixWarp: mode switch buttons live inline next to the bitmap/vector button */}
+                    {props.modeControls || null}
                     {/* Zoom controls */}
                     <InputGroup className={styles.zoomControls}>
                         <ButtonGroup>
@@ -359,6 +361,7 @@ PaintEditorComponent.propTypes = {
     intl: intlShape,
     isEyeDropping: PropTypes.bool,
     name: PropTypes.string,
+    modeControls: PropTypes.node,
     onChangeTheme: PropTypes.func.isRequired,
     onManageFonts: PropTypes.func,
     onRedo: PropTypes.func.isRequired,
