@@ -3407,9 +3407,12 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
         }
         m = V.matrix(m, t);
     } return m; }
-    function svgExport(doc, board = null, selection = null, embedMetadata = false) {
+    function svgExport(doc, board = null, selection = null, embedMetadata = false, skipBackground = false) {
         let artboards = board ? [board] : doc.artboards, bb = V.unionBounds(artboards.map(b => ({ x: b.x, y: b.y, x2: b.x + b.w, y2: b.y + b.h }))), defs = [], body = [], nodes = doc.layers.flatMap(l => l.visible === false ? [] : doc.nodes.filter(n => n.layerId === l.id && n.visible !== false && (!selection || selection.has(n.id))));
-        if (!selection)
+        // Host (Scratch) sync must NOT include the artboard background rectangle:
+        // it would be imported back as a real white shape/graphic in Scratch.
+        // Manual SVG export (from the UI) still keeps the background as before.
+        if (!selection && !skipBackground)
             for (let b of artboards)
                 body.push(`<rect x="${num(b.x)}" y="${num(b.y)}" width="${num(b.w)}" height="${num(b.h)}" fill="${esc(b.background || '#fff')}"/>`);
         for (let n of nodes) {
@@ -5295,12 +5298,40 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
     function toHost (type, payload) {
         try { parent.postMessage(Object.assign({type: type}, payload || {}), '*'); } catch (e) {}
     }
+    // Remove any solid <rect> whose geometry covers (nearly) the whole artboard AND
+    // that has no id/transform/data-name — i.e. the editor's background, not a
+    // user-created shape. Keeps user-drawn white rectangles intact.
+    function stripBackgroundRect (svg, board) {
+        try {
+            if (!board) return svg;
+            var bw = Number(board.w) || 0, bh = Number(board.h) || 0;
+            var bx = Number(board.x) || 0, by = Number(board.y) || 0;
+            if (!bw || !bh) return svg;
+            return svg.replace(/<rect\b[^>]*\/?>/g, function (tag) {
+                if (/\bid\s*=/.test(tag) || /\btransform\s*=/.test(tag) || /\bdata-name\s*=/.test(tag)) return tag;
+                var w = tag.match(/\bwidth\s*=\s*["']([\d.]+)["']/);
+                var h = tag.match(/\bheight\s*=\s*["']([\d.]+)["']/);
+                var x = tag.match(/\bx\s*=\s*["']([-\d.]+)["']/);
+                var y = tag.match(/\by\s*=\s*["']([-\d.]+)["']/);
+                if (!w || !h) return tag;
+                var W = parseFloat(w[1]), H = parseFloat(h[1]);
+                var X = x ? parseFloat(x[1]) : 0, Y = y ? parseFloat(y[1]) : 0;
+                var covers = Math.abs(W - bw) <= 1 && Math.abs(H - bh) <= 1 &&
+                             Math.abs(X - bx) <= 1 && Math.abs(Y - by) <= 1;
+                return covers ? '' : tag;
+            });
+        } catch (e) { return svg; }
+    }
     function exportNow () {
         if (!READY) return;
         try {
             var doc = app.store.doc;
             var board = doc.artboards.find(function (b) { return b.id === app.store.activeArtboard; }) || doc.artboards[0];
-            var svg = V.svgExport(doc, board, null, true);
+            // skipBackground=true: never send the editor's white board background back
+            // to Scratch, otherwise it shows up as an unwanted white rectangle shape.
+            var svg = V.svgExport(doc, board, null, true, true);
+            // Belt-and-braces: strip any full-board solid rect that slipped through.
+            svg = stripBackgroundRect(svg, board);
             toHost('vectora:update', {svg: svg, width: board && board.w, height: board && board.h});
         } catch (e) { console.warn('[Editor] export failed', e); }
     }
