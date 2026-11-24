@@ -24,6 +24,33 @@
     border: 1px solid rgba(60, 60, 60, .2);
 }
 
+.modeSelect {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 6px;
+    font-size: 11px;
+    line-height: 1.2;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    max-width: 130px;
+}
+.modeSelect.dark {
+    background: #3a3b3d;
+    color: #e0e2e4;
+    border: 1px solid rgba(127, 127, 127, .45);
+}
+.modeSelect.light {
+    background: #ffffff;
+    color: #303234;
+    border: 1px solid rgba(60, 60, 60, .28);
+}
+.modeSelect option {
+    background: #2b2c2e;
+    color: #e8eaec;
+}
+
 .modeButton {
     display: inline-flex;
     align-items: center;

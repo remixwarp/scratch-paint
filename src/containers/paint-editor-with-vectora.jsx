@@ -20,6 +20,7 @@ class PaintEditorWithVectora extends React.Component {
         this.state = {showVectora: false};
         this.handleClassic = this.handleClassic.bind(this);
         this.handleVectora = this.handleVectora.bind(this);
+        this.handleModeChange = this.handleModeChange.bind(this);
     }
 
     handleClassic () {
@@ -30,24 +31,25 @@ class PaintEditorWithVectora extends React.Component {
         this.setState({showVectora: true});
     }
 
+    handleModeChange (event) {
+        if (event.target.value === 'editor') this.handleVectora();
+        else this.handleClassic();
+    }
+
     renderModeControls (theme) {
         const {showVectora} = this.state;
         return (
             <span className={classNames(styles.modeControls, styles[theme])}>
-                <button
-                    className={classNames(styles.modeButton, !showVectora && styles.active)}
-                    title="Classic Scratch paint editor"
-                    onClick={this.handleClassic}
+                <select
+                    className={classNames(styles.modeSelect, styles[theme])}
+                    value={showVectora ? 'editor' : 'scratch'}
+                    title="Switch paint editor: Scratch or Editor (vector design studio)"
+                    aria-label="Paint editor"
+                    onChange={this.handleModeChange}
                 >
-                    Scratch
-                </button>
-                <button
-                    className={classNames(styles.modeButton, showVectora && styles.active)}
-                    title="Editor — full vector design studio"
-                    onClick={this.handleVectora}
-                >
-                    <span className={styles.modeDot}>✎</span> Editor
-                </button>
+                    <option value="scratch">Scratch</option>
+                    <option value="editor">Editor (Vector)</option>
+                </select>
             </span>
         );
     }
