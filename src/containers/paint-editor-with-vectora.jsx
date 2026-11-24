@@ -36,10 +36,11 @@ class PaintEditorWithVectora extends React.Component {
         else this.handleClassic();
     }
 
-    renderModeControls (theme) {
+    renderModeControls (theme, floating) {
         const {showVectora} = this.state;
         return (
-            <span className={classNames(styles.modeControls, styles[theme])}>
+            <span className={classNames(styles.modeControls, floating ? styles.floating : null, styles[theme])}>
+                {floating ? <span className={styles.floatingLabel}>Editor</span> : null}
                 <select
                     className={classNames(styles.modeSelect, styles[theme])}
                     value={showVectora ? 'editor' : 'scratch'}
@@ -63,6 +64,9 @@ class PaintEditorWithVectora extends React.Component {
                     {...this.props}
                     modeControls={this.renderModeControls(theme)}
                 />
+                {/* 显眼的浮动切换条：任何模式下都在画板右上角可见，可随时切回 Scratch 或进入 Editor。
+                    z-index 高于矢量画板浮层，避免切换后找不到入口。 */}
+                {this.renderModeControls(theme, true)}
                 {showVectora ? (
                     <div className={classNames(styles.overlay, styles[theme])}>
                         <VectoraEditor
