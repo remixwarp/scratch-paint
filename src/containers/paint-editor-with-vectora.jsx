@@ -9,18 +9,63 @@ import styles from './paint-editor-with-vectora.css';
 /**
  * 外层包装：在原造型/背景画板之上新增「Editor」矢量画板切换。
  * - 原画笔功能完全保留，默认显示
- * - 切换按钮作为行内控件放在左下角「转换位图/矢量图」按钮右侧（通过 props.modeControls 注入），不遮挡文字
- * - 两种模式的按钮始终都在同一位置：经典画板 / Editor 矢量画板
- * - Vectora 内编辑实时回写造型（onUpdateImage），舞台同步显示
+ * - 编辑器切换下拉框固定在画板**底部中间**（不再放右上角），两种模式下都可见，可随时切回
+ * - 双向实时同步枢纽：
+ *   1) 维护权威 SVG(liveSvg)：Scratch 画板每次回写都缓存下来，切到 Editor 时用它初始化，
+ *      不再依赖可能过期的 props.image（GUI 的 shouldComponentUpdate 只比 imageId，编辑内容时不变）
+ *   2) Vectora 编辑回写时更新 liveSvg 并递增 syncKey，强制 Scratch 画板(paper-canvas)重载最新内容
+ *   3) 用 source 标记区分回写来源，避免「Editor→宿主→Editor」回环与撤销栈被重置
  * - 主题与原编辑器保持一致（dark/light）
  */
 class PaintEditorWithVectora extends React.Component {
     constructor (props) {
         super(props);
-        this.state = {showVectora: false};
+        this.state = {
+            showVectora: false,
+            liveSvg: typeof props.image === 'string' ? props.image : '',
+            syncKey: 0,
+            source: 'host' // 'host' | 'scratch' | 'vectora'
+        };
+        this.handleScratchUpdate = this.handleScratchUpdate.bind(this);
+        this.handleVectoraUpdate = this.handleVectoraUpdate.bind(this);
         this.handleClassic = this.handleClassic.bind(this);
         this.handleVectora = this.handleVectora.bind(this);
         this.handleModeChange = this.handleModeChange.bind(this);
+    }
+
+    componentDidUpdate (prevProps) {
+        // 切换造型/角色：用宿主的全新 image 重置权威缓存
+        if (prevProps.imageId !== this.props.imageId) {
+            this.setState({
+                liveSvg: typeof this.props.image === 'string' ? this.props.image : '',
+                source: 'host'
+            });
+        } else if (typeof this.props.image === 'string' &&
+                   this.props.image !== prevProps.image &&
+                   this.state.source !== 'scratch') {
+            // 宿主 image 被外部更新（撤销/重做/外部改造型），且不是我们刚写的 Scratch 内容 -> 采纳
+            this.setState({liveSvg: this.props.image, source: 'host'});
+        }
+    }
+
+    // Scratch 原生画板编辑回写：缓存最新 SVG，同时照常写入 VM
+    handleScratchUpdate (isVector, image, rotationCenterX, rotationCenterY) {
+        if (isVector && typeof image === 'string') {
+            this.setState({liveSvg: image, source: 'scratch'});
+        }
+        this.props.onUpdateImage(isVector, image, rotationCenterX, rotationCenterY);
+    }
+
+    // Editor(Vectora) 编辑回写：更新权威 SVG + 递增 syncKey 强制 Scratch 画板重载
+    handleVectoraUpdate (isVector, svg, rotationCenterX, rotationCenterY) {
+        if (isVector && typeof svg === 'string') {
+            this.setState(state => ({
+                liveSvg: svg,
+                source: 'vectora',
+                syncKey: state.syncKey + 1
+            }));
+        }
+        this.props.onUpdateImage(isVector, svg, rotationCenterX, rotationCenterY);
     }
 
     handleClassic () {
@@ -36,11 +81,11 @@ class PaintEditorWithVectora extends React.Component {
         else this.handleClassic();
     }
 
-    renderModeControls (theme, floating) {
+    renderModeControls (theme) {
         const {showVectora} = this.state;
         return (
-            <span className={classNames(styles.modeControls, floating ? styles.floating : null, styles[theme])}>
-                {floating ? <span className={styles.floatingLabel}>Editor</span> : null}
+            <div className={classNames(styles.modeControls, styles.dock, styles[theme])}>
+                <span className={styles.dockLabel}>Editor</span>
                 <select
                     className={classNames(styles.modeSelect, styles[theme])}
                     value={showVectora ? 'editor' : 'scratch'}
@@ -51,35 +96,40 @@ class PaintEditorWithVectora extends React.Component {
                     <option value="scratch">Scratch</option>
                     <option value="editor">Editor (Vector)</option>
                 </select>
-            </span>
+            </div>
         );
     }
 
     render () {
-        const {showVectora} = this.state;
+        const {showVectora, liveSvg, syncKey, source} = this.state;
         const theme = this.props.theme === 'light' || this.props.theme === 'dark' ? this.props.theme : 'dark';
+        const image = liveSvg || this.props.image;
+        // imageId 带同步版本号：Vectora 编辑后强制 paper-canvas 重新载入权威 SVG
+        const imageId = `${this.props.imageId || ''}-rw${syncKey}`;
         return (
             <div className={styles.wrapper}>
                 <BasePaintEditor
                     {...this.props}
-                    modeControls={this.renderModeControls(theme)}
+                    image={image}
+                    imageId={imageId}
+                    onUpdateImage={this.handleScratchUpdate}
                 />
-                {/* 显眼的浮动切换条：任何模式下都在画板右上角可见，可随时切回 Scratch 或进入 Editor。
-                    z-index 高于矢量画板浮层，避免切换后找不到入口。 */}
-                {this.renderModeControls(theme, true)}
                 {showVectora ? (
                     <div className={classNames(styles.overlay, styles[theme])}>
                         <VectoraEditor
-                            image={this.props.image}
-                            imageId={this.props.imageId}
+                            image={image}
+                            imageId={imageId}
+                            source={source}
                             name={this.props.name}
                             theme={theme}
                             rotationCenterX={this.props.rotationCenterX}
                             rotationCenterY={this.props.rotationCenterY}
-                            onUpdateImage={this.props.onUpdateImage}
+                            onUpdateImage={this.handleVectoraUpdate}
                         />
                     </div>
                 ) : null}
+                {/* 底部居中的编辑器切换下拉框：z-index 高于画板浮层，两种模式下都显眼可见 */}
+                {this.renderModeControls(theme)}
             </div>
         );
     }

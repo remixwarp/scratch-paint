@@ -4,16 +4,24 @@
     height: 100%;
 }
 
-/* 行内模式切换：注入到 paint-editor 左下角 canvasControls，紧跟「转换位图/矢量图」按钮右侧，不遮挡文字 */
+/* 底部居中的编辑器切换条：固定在画板下方，z-index 高于矢量画板浮层(30)，两种模式都显眼可见 */
 .modeControls {
     display: inline-flex;
     flex-direction: row;
     align-items: center;
-    gap: 2px;
-    margin-left: calc(1 * .25rem);
-    padding: 2px;
+    gap: 5px;
+    padding: 3px 6px;
     border-radius: 6px;
     white-space: nowrap;
+}
+.modeControls.dock {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    margin-left: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
 }
 .modeControls.dark {
     background: #303133;
@@ -23,27 +31,15 @@
     background: #eceef0;
     border: 1px solid rgba(60, 60, 60, .2);
 }
-
-/* 浮动切换条：固定在画板右上角，z-index 高于矢量画板浮层(30)，任何模式都显眼可见 */
-.modeControls.floating {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 40;
-    gap: 5px;
-    margin-left: 0;
-    padding: 3px 5px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
-}
-.floatingLabel {
+.dockLabel {
     font-size: 11px;
     font-weight: 600;
     opacity: .9;
 }
-.modeControls.floating.dark .floatingLabel {
+.modeControls.dark .dockLabel {
     color: #e0e2e4;
 }
-.modeControls.floating.light .floatingLabel {
+.modeControls.light .dockLabel {
     color: #303234;
 }
 
@@ -57,7 +53,7 @@
     cursor: pointer;
     user-select: none;
     outline: none;
-    max-width: 130px;
+    max-width: 150px;
 }
 .modeSelect.dark {
     background: #3a3b3d;
