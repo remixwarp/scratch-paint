@@ -4,7 +4,7 @@
     height: 100%;
 }
 
-/* 底部居中的编辑器切换条：固定在画板下方，z-index 高于矢量画板浮层(30)，两种模式都显眼可见 */
+/* 编辑器切换条：作为行内控件嵌在画板底部工具栏（「转换为位图」按钮右侧），不再浮动遮盖画板 */
 .modeControls {
     display: inline-flex;
     flex-direction: row;
@@ -14,14 +14,10 @@
     border-radius: 6px;
     white-space: nowrap;
 }
-.modeControls.dock {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 40;
-    margin-left: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+.modeControls.inline {
+    position: static;
+    margin-left: 4px;
+    box-shadow: none;
 }
 .modeControls.dark {
     background: #303133;
