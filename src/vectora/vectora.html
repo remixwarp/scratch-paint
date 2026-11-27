@@ -5370,36 +5370,48 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
 <script data-rw-i18n="1">
 (function(){
   'use strict';
-  var DICT = {"About collections": "关于合集", "Actual size": "实际大小", "Add a MIDI track": "添加 MIDI 轨道", "Add effect": "添加效果", "Add guide": "添加参考线", "Add text": "添加文字", "Add track": "添加轨道", "Align bottom": "底对齐", "Align horizontal centers": "水平居中对齐", "Align left": "左对齐", "Align right": "右对齐", "Align top": "顶对齐", "Align vertical centers": "垂直居中对齐", "All changes saved locally": "所有更改已保存到本地", "Application menu": "应用菜单", "Arm track for recording": "预备录音轨道", "Arrange objects": "排列对象", "Arrangement loop": "编曲循环", "Arrangement timeline": "编曲时间线", "Audio": "音频", "Audio 1": "音频 1", "Audio Effects": "音频效果", "Audio Studio": "音频工作室", "Audio clip": "音频片段", "Autosave unavailable": "自动保存不可用", "Bring forward": "上移一层", "Bring to front": "置于顶层", "Brush stroke": "画笔笔触", "Bypass effects rack": "旁通效果架", "Bypass or enable all track effects": "旁通或启用所有轨道效果", "Cancel": "取消", "Clear demo": "清除示例", "Click to go to a time": "单击以跳转到时间点", "Click to select. Drag to move. Shift to add to selection.": "单击选择，拖动移动，按住 Shift 可加选。", "Clip": "片段", "Clip launch quantization": "片段启动量化", "Clip name": "片段名称", "Clip properties": "片段属性", "Close": "关闭", "Close export": "关闭导出", "Close help": "关闭帮助", "Collapse or expand detail editor": "折叠或展开详细编辑器", "Connect a MIDI input": "连接 MIDI 输入", "Convert shapes to paths": "将形状转为路径", "Copy": "复制", "Create artboard": "创建画板", "Delete": "删除", "Delete anchor": "删除锚点", "Delete objects": "删除对象", "Delete selected clip": "删除选中片段", "Direct Selection": "直接选择", "Distribute horizontally": "水平分布", "Distribute objects": "分布对象", "Distribute vertically": "垂直分布", "Document": "文档", "Document setup": "文档设置", "Double-click to rename": "双击重命名", "Draw Bézier path": "绘制贝塞尔路径", "Drop your artwork here": "将作品拖到此处", "Drums": "鼓", "Duplicate and move": "复制并移动", "Duplicate objects": "复制对象", "Edit": "编辑", "Edit gradient": "编辑渐变", "Edit path anchor": "编辑路径锚点", "Edit text": "编辑文字", "Editable arrangement": "可编辑编曲", "Editing tools": "编辑工具", "Editor": "编辑器", "Editor (Vector)": "编辑器（矢量）", "Effects": "效果", "Effects preset": "效果预设", "Erase objects": "擦除对象", "Essentials": "基本", "Excluded shape": "排除形状", "Expand shapes": "扩展形状", "Export": "导出", "Favorites": "收藏", "File": "文件", "Fill": "填充", "Fit active artboard": "适应当前画板", "Fit all artboards": "适应所有画板", "Fit selection": "适应选区", "Fit session": "适应会话", "Fit session (F)": "适应会话 (F)", "Go to start": "跳到开头", "Go to start (Home)": "跳到开头 (Home)", "Group objects": "组合对象", "Hand tool": "抓手工具", "Hand tool (H)": "抓手工具 (H)", "Help": "帮助", "History": "历史", "Import": "导入", "Import audio": "导入音频", "Initialize the real audio engine": "初始化音频引擎", "Initializing": "正在初始化", "Instrument": "乐器", "Instruments": "乐器", "Inverse selection": "反选", "Keyboard shortcuts": "键盘快捷键", "Keyboard shortcuts (?)": "键盘快捷键 (?)", "Launch quantization": "启动量化", "Layers": "图层", "Line Segment": "线段", "Loading": "加载中", "Local": "本地", "Local-first workspace": "本地优先工作区", "Lock objects": "锁定对象", "Lock selection": "锁定选区", "Loop": "循环", "Loop selected time (L)": "循环选中时间 (L)", "Main menu": "主菜单", "Master output gain": "主输出增益", "Master volume": "主音量", "Metronome": "节拍器", "Minus front": "顶层减去", "Move Bézier handle": "移动贝塞尔控制柄", "Move anchor": "移动锚点", "Move artboard": "移动画板", "Move effect up": "上移效果", "Move guide": "移动参考线", "Move objects": "移动对象", "Move tool": "移动工具", "Move tool (V)": "移动工具 (V)", "Multitrack": "多轨", "Name": "名称", "New": "新建", "New document": "新建文档", "New session": "新建会话", "Next marker": "下一个标记", "Next marker / 5 seconds forward": "下一个标记 / 前进 5 秒", "No": "否", "No selection": "未选中", "OK": "确定", "Object Eraser": "对象橡皮擦", "Opacity": "不透明度", "Open": "打开", "Open example artwork": "打开示例作品", "Outline stroke": "轮廓化描边", "Pan": "平移", "Pan timeline": "平移时间线", "Paste": "粘贴", "Pen": "钢笔", "Pencil path": "铅笔路径", "Piano roll and sample waveform editor": "钢琴卷帘与采样波形编辑器", "Play": "播放", "Play / pause (Space)": "播放 / 暂停 (空格)", "Play or pause": "播放或暂停", "Previous marker": "上一个标记", "Previous marker / 5 seconds back": "上一个标记 / 后退 5 秒", "Project": "项目", "Properties": "属性", "Pulsegrid": "Pulsegrid", "Pulsegrid Studio": "Pulsegrid 工作室", "Pulsegrid home": "Pulsegrid 主页", "Razor tool": "刀片工具", "Razor tool (R)": "刀片工具 (R)", "Record": "录音", "Record microphone": "录制麦克风", "Record microphone (Shift R)": "录制麦克风 (Shift R)", "Redo": "重做", "Reflect horizontally": "水平镜像", "Reflect vertically": "垂直镜像", "Remove effect": "移除效果", "Rename this project": "重命名项目", "Reset held peaks": "重置保持的峰值", "Resize artboard": "调整画板大小", "Resize objects": "调整对象大小", "Rotate objects": "旋转对象", "SVG, PNG, JPEG, WebP, or .vectora": "支持 SVG、PNG、JPEG、WebP 或 .vectora", "Sample appearance": "取样外观", "Samples": "采样", "Save": "保存", "Save a file to keep changes": "保存文件以保留更改", "Saved on this device": "已保存到此设备", "Saving": "保存中", "Saving locally…": "正在本地保存…", "Scene 1": "场景 1", "Scratch": "Scratch", "Scratch (native)": "Scratch（原生）", "Search": "搜索", "Search audio files": "搜索音频文件", "Search files": "搜索文件", "Search library": "搜索素材库", "Select": "选择", "Select all": "全选", "Select same fill color": "选择相同填充色", "Selection": "选区", "Send backward": "下移一层", "Send to back": "置于底层", "Session clip launcher": "会话片段启动器", "Session settings": "会话设置", "Settings": "设置", "Simplify path": "简化路径", "Smart guides": "智能参考线", "Snap grid": "吸附网格", "Snap to grid (S)": "吸附到网格 (S)", "Soft entrance": "柔和渐入", "Solo": "独奏", "Sonora": "Sonora", "Sonora Studio": "Sonora 工作室", "Sound": "声音", "Sounds": "声音", "Space": "空格", "Stop": "停止", "Stop (Esc)": "停止 (Esc)", "Stroke": "描边", "Studio": "工作室", "Subtracted shape": "减去形状", "Synced": "已同步", "Synced with editor": "已与编辑器同步", "Synced.": "已同步。", "Tap tempo": " tapping 速度", "Tempo BPM": "速度（BPM）", "This version uses 4/4 time": "此版本使用 4/4 拍", "Time selection (T)": "时间选择 (T)", "Time selection tool": "时间选择工具", "Timeline zoom": "时间线缩放", "Toggle browser": "切换浏览器", "Toggle path closure": "切换路径闭合", "Toggle snapping": "切换吸附", "Track activator (mute)": "轨道开关（静音）", "Transport": "走带控制", "Transpose one semitone": "移调一个半音", "Trim artboard view": "裁剪画板视图", "Undo": "撤销", "Undo last edit": "撤销上次编辑", "Ungroup objects": "取消组合", "United shape": "合并形状", "Unlock all": "全部解锁", "Unsaved edits": "未保存的编辑", "View": "视图", "Workspace": "工作区", "Yes": "是", "Your artwork stays on this device.": "你的作品仅保存在此设备上。", "Your audio stays on this device": "你的音频仅保存在此设备上", "Your text": "你的文字", "Zoom in": "放大", "Zoom in (+)": "放大 (+)", "Zoom out": "缩小", "px": "像素"};
-  var KEY = 'rw_i18n_lang';
-  var lang = 'en';
-  try { lang = localStorage.getItem(KEY) || 'en'; } catch(e){}
-  if (lang !== 'zh') lang = 'en';
+  var DICT = {"About collections":"关于合集","Actual size":"实际大小","Add a MIDI track":"添加 MIDI 轨道","Add effect":"添加效果","Add guide":"添加参考线","Add text":"添加文字","Add track":"添加轨道","Align bottom":"底对齐","Align horizontal centers":"水平居中对齐","Align left":"左对齐","Align right":"右对齐","Align top":"顶对齐","Align vertical centers":"垂直居中对齐","All changes saved locally":"所有更改已保存到本地","Application menu":"应用菜单","Arm track for recording":"预备录音轨道","Arrange objects":"排列对象","Arrangement loop":"编曲循环","Arrangement timeline":"编曲时间线","Audio":"音频","Audio 1":"音频 1","Audio Effects":"音频效果","Audio Studio":"音频工作室","Audio clip":"音频片段","Autosave unavailable":"自动保存不可用","Bring forward":"上移一层","Bring to front":"置于顶层","Brush stroke":"画笔笔触","Bypass effects rack":"旁通效果架","Bypass or enable all track effects":"旁通或启用所有轨道效果","Cancel":"取消","Clear demo":"清除示例","Click to go to a time":"单击以跳转到时间点","Click to select. Drag to move. Shift to add to selection.":"单击选择，拖动移动，按住 Shift 可加选。","Clip":"片段","Clip launch quantization":"片段启动量化","Clip name":"片段名称","Clip properties":"片段属性","Close":"关闭","Close export":"关闭导出","Close help":"关闭帮助","Collapse or expand detail editor":"折叠或展开详细编辑器","Connect a MIDI input":"连接 MIDI 输入","Convert shapes to paths":"将形状转为路径","Copy":"复制","Create artboard":"创建画板","Delete":"删除","Delete anchor":"删除锚点","Delete objects":"删除对象","Delete selected clip":"删除选中片段","Direct Selection":"直接选择","Distribute horizontally":"水平分布","Distribute objects":"分布对象","Distribute vertically":"垂直分布","Document":"文档","Document setup":"文档设置","Double-click to rename":"双击重命名","Draw Bézier path":"绘制贝塞尔路径","Drop your artwork here":"将作品拖到此处","Drums":"鼓","Duplicate and move":"复制并移动","Duplicate objects":"复制对象","Edit":"编辑","Edit gradient":"编辑渐变","Edit path anchor":"编辑路径锚点","Edit text":"编辑文字","Editable arrangement":"可编辑编曲","Editing tools":"编辑工具","Editor":"编辑器","Editor (Vector)":"编辑器（矢量）","Effects":"效果","Effects preset":"效果预设","Erase objects":"擦除对象","Essentials":"基本","Excluded shape":"排除形状","Expand shapes":"扩展形状","Export":"导出","Favorites":"收藏","File":"文件","Fill":"填充","Fit active artboard":"适应当前画板","Fit all artboards":"适应所有画板","Fit selection":"适应选区","Fit session":"适应会话","Fit session (F)":"适应会话 (F)","Go to start":"跳到开头","Go to start (Home)":"跳到开头 (Home)","Group objects":"组合对象","Hand tool":"抓手工具","Hand tool (H)":"抓手工具 (H)","Help":"帮助","History":"历史","Import":"导入","Import audio":"导入音频","Initialize the real audio engine":"初始化音频引擎","Initializing":"正在初始化","Instrument":"乐器","Instruments":"乐器","Inverse selection":"反选","Keyboard shortcuts":"键盘快捷键","Keyboard shortcuts (?)":"键盘快捷键 (?)","Launch quantization":"启动量化","Layers":"图层","Line Segment":"线段","Loading":"加载中","Local":"本地","Local-first workspace":"本地优先工作区","Lock objects":"锁定对象","Lock selection":"锁定选区","Loop":"循环","Loop selected time (L)":"循环选中时间 (L)","Main menu":"主菜单","Master output gain":"主输出增益","Master volume":"主音量","Metronome":"节拍器","Minus front":"顶层减去","Move Bézier handle":"移动贝塞尔控制柄","Move anchor":"移动锚点","Move artboard":"移动画板","Move effect up":"上移效果","Move guide":"移动参考线","Move objects":"移动对象","Move tool":"移动工具","Move tool (V)":"移动工具 (V)","Multitrack":"多轨","Name":"名称","New":"新建","New document":"新建文档","New session":"新建会话","Next marker":"下一个标记","Next marker / 5 seconds forward":"下一个标记 / 前进 5 秒","No":"否","No selection":"未选中","OK":"确定","Object Eraser":"对象橡皮擦","Opacity":"不透明度","Open":"打开","Open example artwork":"打开示例作品","Outline stroke":"轮廓化描边","Pan":"平移","Pan timeline":"平移时间线","Paste":"粘贴","Pen":"钢笔","Pencil path":"铅笔路径","Piano roll and sample waveform editor":"钢琴卷帘与采样波形编辑器","Play":"播放","Play / pause (Space)":"播放 / 暂停 (空格)","Play or pause":"播放或暂停","Previous marker":"上一个标记","Previous marker / 5 seconds back":"上一个标记 / 后退 5 秒","Project":"项目","Properties":"属性","Pulsegrid":"Pulsegrid","Pulsegrid Studio":"Pulsegrid 工作室","Pulsegrid home":"Pulsegrid 主页","Razor tool":"刀片工具","Razor tool (R)":"刀片工具 (R)","Record":"录音","Record microphone":"录制麦克风","Record microphone (Shift R)":"录制麦克风 (Shift R)","Redo":"重做","Reflect horizontally":"水平镜像","Reflect vertically":"垂直镜像","Remove effect":"移除效果","Rename this project":"重命名项目","Reset held peaks":"重置保持的峰值","Resize artboard":"调整画板大小","Resize objects":"调整对象大小","Rotate objects":"旋转对象","SVG, PNG, JPEG, WebP, or .vectora":"支持 SVG、PNG、JPEG、WebP 或 .vectora","Sample appearance":"取样外观","Samples":"采样","Save":"保存","Save a file to keep changes":"保存文件以保留更改","Saved on this device":"已保存到此设备","Saving":"保存中","Saving locally…":"正在本地保存…","Scene 1":"场景 1","Scratch":"Scratch","Scratch (native)":"Scratch（原生）","Search":"搜索","Search audio files":"搜索音频文件","Search files":"搜索文件","Search library":"搜索素材库","Select":"选择","Select all":"全选","Select same fill color":"选择相同填充色","Selection":"选区","Send backward":"下移一层","Send to back":"置于底层","Session clip launcher":"会话片段启动器","Session settings":"会话设置","Settings":"设置","Simplify path":"简化路径","Smart guides":"智能参考线","Snap grid":"吸附网格","Snap to grid (S)":"吸附到网格 (S)","Soft entrance":"柔和渐入","Solo":"独奏","Sonora":"Sonora","Sonora Studio":"Sonora 工作室","Sound":"声音","Sounds":"声音","Space":"空格","Stop":"停止","Stop (Esc)":"停止 (Esc)","Stroke":"描边","Studio":"工作室","Subtracted shape":"减去形状","Synced":"已同步","Synced with editor":"已与编辑器同步","Synced.":"已同步。","Tap tempo":" tapping 速度","Tempo BPM":"速度（BPM）","This version uses 4/4 time":"此版本使用 4/4 拍","Time selection (T)":"时间选择 (T)","Time selection tool":"时间选择工具","Timeline zoom":"时间线缩放","Toggle browser":"切换浏览器","Toggle path closure":"切换路径闭合","Toggle snapping":"切换吸附","Track activator (mute)":"轨道开关（静音）","Transport":"走带控制","Transpose one semitone":"移调一个半音","Trim artboard view":"裁剪画板视图","Undo":"撤销","Undo last edit":"撤销上次编辑","Ungroup objects":"取消组合","United shape":"合并形状","Unlock all":"全部解锁","Unsaved edits":"未保存的编辑","View":"视图","Workspace":"工作区","Yes":"是","Your artwork stays on this device.":"你的作品仅保存在此设备上。","Your audio stays on this device":"你的音频仅保存在此设备上","Your text":"你的文字","Zoom in":"放大","Zoom in (+)":"放大 (+)","Zoom out":"缩小","px":"像素"};
+  var REV = {"关于合集":"About collections","实际大小":"Actual size","添加 MIDI 轨道":"Add a MIDI track","添加效果":"Add effect","添加参考线":"Add guide","添加文字":"Add text","添加轨道":"Add track","底对齐":"Align bottom","水平居中对齐":"Align horizontal centers","左对齐":"Align left","右对齐":"Align right","顶对齐":"Align top","垂直居中对齐":"Align vertical centers","所有更改已保存到本地":"All changes saved locally","应用菜单":"Application menu","预备录音轨道":"Arm track for recording","排列对象":"Arrange objects","编曲循环":"Arrangement loop","编曲时间线":"Arrangement timeline","音频":"Audio","音频 1":"Audio 1","音频效果":"Audio Effects","音频工作室":"Audio Studio","音频片段":"Audio clip","自动保存不可用":"Autosave unavailable","上移一层":"Bring forward","置于顶层":"Bring to front","画笔笔触":"Brush stroke","旁通效果架":"Bypass effects rack","旁通或启用所有轨道效果":"Bypass or enable all track effects","取消":"Cancel","清除示例":"Clear demo","单击以跳转到时间点":"Click to go to a time","单击选择，拖动移动，按住 Shift 可加选。":"Click to select. Drag to move. Shift to add to selection.","片段":"Clip","片段启动量化":"Clip launch quantization","片段名称":"Clip name","片段属性":"Clip properties","关闭":"Close","关闭导出":"Close export","关闭帮助":"Close help","折叠或展开详细编辑器":"Collapse or expand detail editor","连接 MIDI 输入":"Connect a MIDI input","将形状转为路径":"Convert shapes to paths","复制":"Copy","创建画板":"Create artboard","删除":"Delete","删除锚点":"Delete anchor","删除对象":"Delete objects","删除选中片段":"Delete selected clip","直接选择":"Direct Selection","水平分布":"Distribute horizontally","分布对象":"Distribute objects","垂直分布":"Distribute vertically","文档":"Document","文档设置":"Document setup","双击重命名":"Double-click to rename","绘制贝塞尔路径":"Draw Bézier path","将作品拖到此处":"Drop your artwork here","鼓":"Drums","复制并移动":"Duplicate and move","复制对象":"Duplicate objects","编辑":"Edit","编辑渐变":"Edit gradient","编辑路径锚点":"Edit path anchor","编辑文字":"Edit text","可编辑编曲":"Editable arrangement","编辑工具":"Editing tools","编辑器":"Editor","编辑器（矢量）":"Editor (Vector)","效果":"Effects","效果预设":"Effects preset","擦除对象":"Erase objects","基本":"Essentials","排除形状":"Excluded shape","扩展形状":"Expand shapes","导出":"Export","收藏":"Favorites","文件":"File","填充":"Fill","适应当前画板":"Fit active artboard","适应所有画板":"Fit all artboards","适应选区":"Fit selection","适应会话":"Fit session","适应会话 (F)":"Fit session (F)","跳到开头":"Go to start","跳到开头 (Home)":"Go to start (Home)","组合对象":"Group objects","抓手工具":"Hand tool","抓手工具 (H)":"Hand tool (H)","帮助":"Help","历史":"History","导入":"Import","导入音频":"Import audio","初始化音频引擎":"Initialize the real audio engine","正在初始化":"Initializing","乐器":"Instrument","反选":"Inverse selection","键盘快捷键":"Keyboard shortcuts","键盘快捷键 (?)":"Keyboard shortcuts (?)","启动量化":"Launch quantization","图层":"Layers","线段":"Line Segment","加载中":"Loading","本地":"Local","本地优先工作区":"Local-first workspace","锁定对象":"Lock objects","锁定选区":"Lock selection","循环":"Loop","循环选中时间 (L)":"Loop selected time (L)","主菜单":"Main menu","主输出增益":"Master output gain","主音量":"Master volume","节拍器":"Metronome","顶层减去":"Minus front","移动贝塞尔控制柄":"Move Bézier handle","移动锚点":"Move anchor","移动画板":"Move artboard","上移效果":"Move effect up","移动参考线":"Move guide","移动对象":"Move objects","移动工具":"Move tool","移动工具 (V)":"Move tool (V)","多轨":"Multitrack","名称":"Name","新建":"New","新建文档":"New document","新建会话":"New session","下一个标记":"Next marker","下一个标记 / 前进 5 秒":"Next marker / 5 seconds forward","否":"No","未选中":"No selection","确定":"OK","对象橡皮擦":"Object Eraser","不透明度":"Opacity","打开":"Open","打开示例作品":"Open example artwork","轮廓化描边":"Outline stroke","平移":"Pan","平移时间线":"Pan timeline","粘贴":"Paste","钢笔":"Pen","铅笔路径":"Pencil path","钢琴卷帘与采样波形编辑器":"Piano roll and sample waveform editor","播放":"Play","播放 / 暂停 (空格)":"Play / pause (Space)","播放或暂停":"Play or pause","上一个标记":"Previous marker","上一个标记 / 后退 5 秒":"Previous marker / 5 seconds back","项目":"Project","属性":"Properties","Pulsegrid":"Pulsegrid","Pulsegrid 工作室":"Pulsegrid Studio","Pulsegrid 主页":"Pulsegrid home","刀片工具":"Razor tool","刀片工具 (R)":"Razor tool (R)","录音":"Record","录制麦克风":"Record microphone","录制麦克风 (Shift R)":"Record microphone (Shift R)","重做":"Redo","水平镜像":"Reflect horizontally","垂直镜像":"Reflect vertically","移除效果":"Remove effect","重命名项目":"Rename this project","重置保持的峰值":"Reset held peaks","调整画板大小":"Resize artboard","调整对象大小":"Resize objects","旋转对象":"Rotate objects","支持 SVG、PNG、JPEG、WebP 或 .vectora":"SVG, PNG, JPEG, WebP, or .vectora","取样外观":"Sample appearance","采样":"Samples","保存":"Save","保存文件以保留更改":"Save a file to keep changes","已保存到此设备":"Saved on this device","保存中":"Saving","正在本地保存…":"Saving locally…","场景 1":"Scene 1","Scratch":"Scratch","Scratch（原生）":"Scratch (native)","搜索":"Search","搜索音频文件":"Search audio files","搜索文件":"Search files","搜索素材库":"Search library","选择":"Select","全选":"Select all","选择相同填充色":"Select same fill color","选区":"Selection","下移一层":"Send backward","置于底层":"Send to back","会话片段启动器":"Session clip launcher","会话设置":"Session settings","设置":"Settings","简化路径":"Simplify path","智能参考线":"Smart guides","吸附网格":"Snap grid","吸附到网格 (S)":"Snap to grid (S)","柔和渐入":"Soft entrance","独奏":"Solo","Sonora":"Sonora","Sonora 工作室":"Sonora Studio","声音":"Sound","空格":"Space","停止":"Stop","停止 (Esc)":"Stop (Esc)","描边":"Stroke","工作室":"Studio","减去形状":"Subtracted shape","已同步":"Synced","已与编辑器同步":"Synced with editor","已同步。":"Synced."," tapping 速度":"Tap tempo","速度（BPM）":"Tempo BPM","此版本使用 4/4 拍":"This version uses 4/4 time","时间选择 (T)":"Time selection (T)","时间选择工具":"Time selection tool","时间线缩放":"Timeline zoom","切换浏览器":"Toggle browser","切换路径闭合":"Toggle path closure","切换吸附":"Toggle snapping","轨道开关（静音）":"Track activator (mute)","走带控制":"Transport","移调一个半音":"Transpose one semitone","裁剪画板视图":"Trim artboard view","撤销":"Undo","撤销上次编辑":"Undo last edit","取消组合":"Ungroup objects","合并形状":"United shape","全部解锁":"Unlock all","未保存的编辑":"Unsaved edits","视图":"View","工作区":"Workspace","是":"Yes","你的作品仅保存在此设备上。":"Your artwork stays on this device.","你的音频仅保存在此设备上":"Your audio stays on this device","你的文字":"Your text","放大":"Zoom in","放大 (+)":"Zoom in (+)","缩小":"Zoom out","像素":"px"};
 
-  var origText = new WeakMap();
-  var origAttr = new WeakMap();
+  // 宿主当前语言：读宿主 GUI 真正使用的存储，而非上次按钮点过的独立缓存。
+  function readHostLang(){
+    var raw = '';
+    try { if (window.__RW_SEED_LANG__) raw = window.__RW_SEED_LANG__; } catch(e){}
+    if (!raw) try { raw = localStorage.getItem('tw:language') || ''; } catch(e){}
+    if (!raw) try { raw = localStorage.getItem('currentLocale') || ''; } catch(e){}
+    if (!raw) try { raw = document.documentElement.lang || ''; } catch(e){}
+    if (!raw) try { raw = (parent.document.documentElement.lang) || ''; } catch(e){}
+    var base = String(raw || '').split('-')[0].toLowerCase();
+    return base === 'zh' ? 'zh' : 'en';
+  }
 
-  function zh(s){
+  var lang = readHostLang();
+
+  // 确定性转换：中文->英文用反词典，英文->中文用正词典。
+  // 幂等：已翻译的中文再 translate 仍是中文，重复执行不累积、不依赖节点历史。
+  function translate(s){
     if (!s) return s;
     var t = s.trim();
-    if (DICT[t]) return s.replace(t, DICT[t]);
+    if (lang === 'zh') {
+      if (DICT[t]) return s.replace(t, DICT[t]);
+    } else {
+      if (REV[t]) return s.replace(t, REV[t]);
+    }
     return s;
   }
 
   function applyNode(node){
-    if (node.nodeType === 3) { // text node
+    if (node.nodeType === 3) {
       var v = node.nodeValue;
-      if (!v || !/[A-Za-z]/.test(v)) return;
-      if (!origText.has(node)) origText.set(node, v);
-      node.nodeValue = (lang === 'zh') ? zh(origText.get(node)) : origText.get(node);
+      if (!v) return;
+      var nv = translate(v);
+      if (nv !== v) node.nodeValue = nv;
     } else if (node.nodeType === 1) {
       ['title','placeholder','aria-label'].forEach(function(a){
         var v = node.getAttribute && node.getAttribute(a);
-        if (!v || !/[A-Za-z]/.test(v)) return;
-        var store = origAttr.get(node) || {};
-        if (!(a in store)) store[a] = v;
-        origAttr.set(node, store);
-        node.setAttribute(a, lang === 'zh' ? zh(store[a]) : store[a]);
+        if (!v) return;
+        var nv = translate(v);
+        if (nv !== v) node.setAttribute(a, nv);
       });
     }
   }
@@ -5415,46 +5427,14 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
   function applyAll(){ walk(document.body); }
 
   function setLang(l){
-    lang = (l === 'zh') ? 'zh' : 'en';
-    try { localStorage.setItem(KEY, lang); } catch(e){}
+    var next = (l === 'zh') ? 'zh' : 'en';
+    if (next === lang) return;
+    lang = next;
     applyAll();
-    updateBtn();
-  }
-
-  function toggleBtn(){
-    var b = document.getElementById('rw-lang-btn');
-    if (!b) return;
-    setLang(lang === 'zh' ? 'en' : 'zh');
-  }
-
-  function updateBtn(){
-    var b = document.getElementById('rw-lang-btn');
-    if (b) b.textContent = (lang === 'zh') ? 'EN' : '中';
-  }
-
-  function ensureBtn(){
-    if (document.getElementById('rw-lang-btn')) { updateBtn(); return; }
-    var b = document.createElement('button');
-    b.id = 'rw-lang-btn';
-    b.type = 'button';
-    b.textContent = (lang === 'zh') ? 'EN' : '中';
-    b.title = '切换语言 / Switch language';
-    b.setAttribute('aria-label','切换语言 / Switch language');
-    var css = 'position:fixed;right:10px;bottom:10px;z-index:2147483000;'+
-      'min-width:30px;height:30px;padding:0 8px;border-radius:15px;border:1px solid rgba(128,128,128,.55);'+
-      'background:#2b2d30ee;color:#eceff1;font:600 13px/30px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;'+
-      'cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:.92;';
-    b.style.cssText = css;
-    b.addEventListener('mouseenter',function(){b.style.opacity='1';});
-    b.addEventListener('mouseleave',function(){b.style.opacity='.92';});
-    b.addEventListener('click', toggleBtn);
-    (document.body || document.documentElement).appendChild(b);
-    updateBtn();
   }
 
   function boot(){
     applyAll();
-    ensureBtn();
     var mo = new MutationObserver(function(muts){
       muts.forEach(function(m){
         if (m.type === 'childList') {
@@ -5466,14 +5446,21 @@ struct VSOut { @builtin(position) position:vec4f, @location(0) local:vec2f, @loc
       });
     });
     mo.observe(document.documentElement, {childList:true, subtree:true});
-  }
 
-  window.addEventListener('message', function(e){
-    var d = e.data;
-    if (!d || typeof d !== 'object') return;
-    if (d.type === 'rw:set-lang' && (d.lang === 'zh' || d.lang === 'en')) setLang(d.lang);
-    if (d.type === 'rw:toggle-lang') setLang(lang === 'zh' ? 'en' : 'zh');
-  });
+    // 宿主语言变化自动跟随（无需按钮）：
+    // 1) storage 事件（同源 localStorage 变化）
+    window.addEventListener('storage', function(e){
+      if (e && (e.key === 'tw:language' || e.key === 'currentLocale')) setLang(readHostLang());
+    });
+    // 2) 宿主 postMessage 下发
+    window.addEventListener('message', function(e){
+      var d = e.data;
+      if (!d || typeof d !== 'object') return;
+      if ((d.type === 'studio:set-lang' || d.type === 'rw:set-lang') && (d.lang === 'zh' || d.lang === 'en')) setLang(d.lang);
+    });
+    // 3) 定时轮询兜底：覆盖 <html lang> 变化或跨上下文写入
+    setInterval(function(){ setLang(readHostLang()); }, 1200);
+  }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
