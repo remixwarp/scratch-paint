@@ -24,6 +24,7 @@
     "url": "git+ssh://git@github.com/LLK/scratch-paint.git"
   },
   "dependencies": {
+    "@remixwarp/scratch-l10n": "https://github.com/remixwarp/scratch-l10n/archive/63ba19500d8baf9e53147df7437e94b9c5bb3b54.tar.gz",
     "@turbowarp/paper": "^0.12.202407262155",
     "classnames": "2.2.5",
     "cross-env": "^10.1.0",

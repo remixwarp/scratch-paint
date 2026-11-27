@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import vectoraHtml from './vectora-html.js';
+import dictSeedScript from '../../vectora/editor-i18n-dict';
 
 /**
  * Vectora 矢量画板：在 iframe 内加载完整改造版 Vectora，并通过 postMessage 与宿主造型编辑器双向同步。
@@ -32,6 +33,9 @@ function hostLangKey () {
 function buildSeededDoc () {
     try {
         var seed = '<script>window.__RW_SEED_LANG__=' + JSON.stringify(hostLangKey()) + ';<\/script>';
+        // 注入来自 scratch-l10n 的权威 UI 词典（1844 条）。
+        var dictSeed = dictSeedScript();
+        if (dictSeed) seed = dictSeed + seed;
         return vectoraHtml.replace('<script>', seed + '<script>');
     } catch (e) {
         return vectoraHtml;
