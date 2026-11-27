@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import vectoraHtml from './vectora-html.js';
+import localizeHtml from '../../vectora/vectora-i18n-static';
 
 /**
  * Vectora 矢量画板：在 iframe 内加载完整改造版 Vectora，并通过 postMessage 与宿主造型编辑器双向同步。
@@ -12,11 +13,27 @@ import vectoraHtml from './vectora-html.js';
  * - 修复单向更新：Scratch 画板编辑后 image 内容变化也重新 init；source==='vectora' 的回写不再回灌，避免回环。
  * 版权声明、logo 等在 vectora.html 内按需求处理，本组件不裁剪任何 Vectora 功能。
  */
+// 宿主 Scratch 语言：与 LanguageService 写入的 key 保持一致。
+// iframe 内的运行时脚本看不到宿主 locale，因此翻译必须在宿主侧、srcDoc 注入前完成。
+function hostLangKey () {
+    try {
+        var stored = localStorage.getItem('tw:language') || localStorage.getItem('currentLocale') || '';
+        var htmlLang = (typeof document !== 'undefined' && document.documentElement &&
+            document.documentElement.lang) || '';
+        var raw = stored || htmlLang;
+        var base = (raw || 'en').split('-')[0].toLowerCase();
+        return base === 'zh' ? 'zh' : 'en';
+    } catch (e) {
+        return 'en';
+    }
+}
+
 class VectoraEditor extends React.Component {
     constructor (props) {
         super(props);
         this.handleMessage = this.handleMessage.bind(this);
         this.frameRef = null;
+        this._uiLang = hostLangKey();
         this._ready = false;
         this._pendingInit = null;
         this._lastInitSvg = null;
@@ -32,6 +49,13 @@ class VectoraEditor extends React.Component {
     }
 
     componentDidUpdate (prevProps) {
+        // 宿主语言变化：用新语言静态重编译 srcDoc，并强制 iframe 重建（key 变化）。
+        const langNow = hostLangKey();
+        if (langNow !== this._uiLang) {
+            this._uiLang = langNow;
+            this.setState(prev => ({docVersion: (prev.docVersion || 0) + 1}));
+            return;
+        }
         // 宿主主题变化时同步进 iframe
         if (prevProps.theme !== this.props.theme) {
             this.post({type: 'vectora:theme', theme: this.props.theme});
@@ -113,15 +137,18 @@ class VectoraEditor extends React.Component {
     }
 
     render () {
-        // srcDoc 直接内联完整改造版 Vectora；用 raw-loader 文本导入，避免额外静态资源路径问题
+        // 宿主侧静态翻译：srcDoc 注入前一次性替换为当前语言，DOM 第一帧即为目标语言。
+        // key 绑定语言/版本，语言或文档变化时强制 React 卸载旧 iframe、挂载新实例。
+        const doc = localizeHtml(vectoraHtml, hostLangKey());
         return (
             <iframe
+                key={this._uiLang + '-' + (this.state.docVersion || 0)}
                 ref={ref => {
                     this.frameRef = ref;
                 }}
                 title="Editor"
                 className={this.props.className}
-                srcDoc={vectoraHtml}
+                srcDoc={doc}
                 onLoad={() => this.handleLoad()}
                 allow="fullscreen; autoplay"
             />
