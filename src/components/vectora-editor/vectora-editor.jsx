@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import vectoraHtml from './vectora-html.js';
-import localizeHtml from '../../vectora/vectora-i18n-static';
 
 /**
  * Vectora 矢量画板：在 iframe 内加载完整改造版 Vectora，并通过 postMessage 与宿主造型编辑器双向同步。
@@ -25,6 +24,17 @@ function hostLangKey () {
         return base === 'zh' ? 'zh' : 'en';
     } catch (e) {
         return 'en';
+    }
+}
+
+// 在 Vectora HTML 最前面注入宿主语言种子；Vectora 内的 v3 i18n 脚本启动时读取，
+// 并在 onLoad / 语言变化时再用 postMessage 推送一次，双保险。
+function buildSeededDoc () {
+    try {
+        var seed = '<script>window.__RW_SEED_LANG__=' + JSON.stringify(hostLangKey()) + ';<\/script>';
+        return vectoraHtml.replace('<script>', seed + '<script>');
+    } catch (e) {
+        return vectoraHtml;
     }
 }
 
@@ -101,6 +111,7 @@ class VectoraEditor extends React.Component {
 
     handleLoad () {
         this.sendInit();
+        this.post({type: 'studio:set-lang', lang: hostLangKey()});
     }
 
     handleMessage (event) {
@@ -137,9 +148,9 @@ class VectoraEditor extends React.Component {
     }
 
     render () {
-        // 宿主侧静态翻译：srcDoc 注入前一次性替换为当前语言，DOM 第一帧即为目标语言。
-        // key 绑定语言/版本，语言或文档变化时强制 React 卸载旧 iframe、挂载新实例。
-        const doc = localizeHtml(vectoraHtml, hostLangKey());
+        // 注入宿主语言种子（v3 i18n 脚本启动读取 + postMessage 兜底）。
+        // key 绑定语言/版本，语言变化时强制 React 卸载旧 iframe、挂载新实例。
+        const doc = buildSeededDoc();
         return (
             <iframe
                 key={this._uiLang + '-' + (this.state.docVersion || 0)}
