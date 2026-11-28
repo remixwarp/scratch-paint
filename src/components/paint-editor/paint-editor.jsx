@@ -291,8 +291,6 @@ const PaintEditorComponent = props => (
                                 </span>
                             </Button> : null
                     }
-                    {/* RemixWarp: mode switch buttons live inline next to the bitmap/vector button */}
-                    {props.modeControls || null}
                     {/* Zoom controls */}
                     <InputGroup className={styles.zoomControls}>
                         <ButtonGroup>
@@ -327,6 +325,8 @@ const PaintEditorComponent = props => (
                                 />
                             </Button>
                         </ButtonGroup>
+                        {/* RemixWarp: editor switch dropdown, inline next to the zoom-reset button group */}
+                        {props.modeControls || null}
                         <ButtonGroup>
                             <Button
                                 className={styles.buttonGroupButton}
