@@ -19,6 +19,12 @@
     margin-left: 4px;
     box-shadow: none;
 }
+/* Editor 画板覆盖层 z-index:30；切换框提层级到 31，保证切到 Editor 后仍能在底部横条看到并切回 Scratch。
+   仍为行内 static 定位、固定在「转换为位图/矢量」按钮右侧，不做浮动。 */
+.modeControls.onTop {
+    position: relative;
+    z-index: 31;
+}
 .modeControls.dark {
     background: #303133;
     border: 1px solid rgba(127, 127, 127, .35);

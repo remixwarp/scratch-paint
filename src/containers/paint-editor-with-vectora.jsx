@@ -6,6 +6,18 @@ import BasePaintEditor from './tw-paint-editor-wrapper.jsx';
 import VectoraEditor from '../components/vectora-editor/vectora-editor.jsx';
 import styles from './paint-editor-with-vectora.css';
 
+// 宿主 Scratch 语言（与 LanguageService / vectora-editor 一致的 key，保证整站切换联动）
+function hostLangKey () {
+    try {
+        var stored = localStorage.getItem('tw:language') || localStorage.getItem('currentLocale') || '';
+        var htmlLang = (typeof document !== 'undefined' && document.documentElement && document.documentElement.lang) || '';
+        var base = (stored || htmlLang || 'en').split('-')[0].toLowerCase();
+        return base === 'zh' ? 'zh' : 'en';
+    } catch (e) {
+        return 'en';
+    }
+}
+
 /**
  * 外层包装：在原造型/背景画板之上新增「Editor」矢量画板切换。
  * - 原画笔功能完全保留，默认显示
@@ -84,18 +96,19 @@ class PaintEditorWithVectora extends React.Component {
 
     renderModeControls (theme) {
         const {showVectora} = this.state;
+        const zh = hostLangKey() === 'zh';
         return (
-            <div className={classNames(styles.modeControls, styles.inline, styles[theme])}>
-                <span className={styles.dockLabel}>Editor</span>
+            <div className={classNames(styles.modeControls, styles.inline, styles.onTop, styles[theme])}>
+                <span className={styles.dockLabel}>{zh ? '编辑器' : 'Editor'}</span>
                 <select
                     className={classNames(styles.modeSelect, styles[theme])}
                     value={showVectora ? 'editor' : 'scratch'}
-                    title="Switch paint editor: Scratch or Editor (vector design studio)"
-                    aria-label="Paint editor"
+                    title={zh ? '切换造型画板：Scratch 画笔或 Editor（矢量设计工作室）' : 'Switch paint editor: Scratch or Editor (vector design studio)'}
+                    aria-label={zh ? '造型画板' : 'Paint editor'}
                     onChange={this.handleModeChange}
                 >
                     <option value="scratch">Scratch</option>
-                    <option value="editor">Editor (Vector)</option>
+                    <option value="editor">{zh ? '编辑器（矢量）' : 'Editor (Vector)'}</option>
                 </select>
             </div>
         );
