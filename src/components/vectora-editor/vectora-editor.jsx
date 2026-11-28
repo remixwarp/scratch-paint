@@ -45,6 +45,10 @@ function buildSeededDoc () {
 class VectoraEditor extends React.Component {
     constructor (props) {
         super(props);
+        // 必须初始化 state：render() 与 componentDidUpdate() 都读取 this.state.docVersion，
+        // 缺少此初始化会导致切换绘图编辑器挂载本组件时 this.state 为 null，
+        // 抛出 TypeError: Cannot read properties of null (reading 'docVersion') 使页面崩溃。
+        this.state = {docVersion: 0};
         this.handleMessage = this.handleMessage.bind(this);
         this.frameRef = null;
         this._uiLang = hostLangKey();
