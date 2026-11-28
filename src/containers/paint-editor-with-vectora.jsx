@@ -21,8 +21,8 @@ function hostLangKey () {
 /**
  * 外层包装：在原造型/背景画板之上新增「Editor」矢量画板切换。
  * - 原画笔功能完全保留，默认显示
- * - 编辑器切换下拉框作为行内控件嵌入「转换为位图 / 转换为矢量」按钮右侧同一栏（画布底部工具栏），
- *   不再浮动遮盖画板；两种模式下都可见，可随时切回
+ * - 编辑器切换下拉框浮动在画板底部居中（z-index:40，高于矢量画板覆盖层 30），
+ *   两种模式下都可见，可随时切回 Scratch；不依赖 paint-editor 内部工具栏注入点
  * - 双向实时同步枢纽：
  *   1) 维护权威 SVG(liveSvg)：Scratch 画板每次回写都缓存下来，切到 Editor 时用它初始化，
  *      不再依赖可能过期的 props.image（GUI 的 shouldComponentUpdate 只比 imageId，编辑内容时不变）
@@ -98,7 +98,7 @@ class PaintEditorWithVectora extends React.Component {
         const {showVectora} = this.state;
         const zh = hostLangKey() === 'zh';
         return (
-            <div className={classNames(styles.modeControls, styles.inline, styles.onTop, styles[theme])}>
+            <div className={classNames(styles.modeControls, styles.dock, styles[theme])}>
                 <span className={styles.dockLabel}>{zh ? '编辑器' : 'Editor'}</span>
                 <select
                     className={classNames(styles.modeSelect, styles[theme])}
@@ -127,8 +127,10 @@ class PaintEditorWithVectora extends React.Component {
                     image={image}
                     imageId={imageId}
                     onUpdateImage={this.handleScratchUpdate}
-                    modeControls={this.renderModeControls(theme)}
                 />
+                {/* 浮动编辑器切换框：直接挂在最外层 wrapper，z-index:40 高于矢量画板覆盖层(30)，
+                    不依赖 paint-editor 内部工具栏的 modeControls 注入点，构建后必定可见 */}
+                {this.renderModeControls(theme)}
                 {showVectora ? (
                     <div className={classNames(styles.overlay, styles[theme])}>
                         <VectoraEditor

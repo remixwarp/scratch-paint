@@ -4,7 +4,7 @@
     height: 100%;
 }
 
-/* 编辑器切换条：作为行内控件嵌在画板底部工具栏（「转换为位图」按钮右侧），不再浮动遮盖画板 */
+/* 编辑器切换条：浮动在画板底部居中，z-index:40 高于矢量画板覆盖层(30)，两种模式都可见 */
 .modeControls {
     display: inline-flex;
     flex-direction: row;
@@ -14,16 +14,14 @@
     border-radius: 6px;
     white-space: nowrap;
 }
-.modeControls.inline {
-    position: static;
-    margin-left: 4px;
-    box-shadow: none;
-}
-/* Editor 画板覆盖层 z-index:30；切换框提层级到 31，保证切到 Editor 后仍能在底部横条看到并切回 Scratch。
-   仍为行内 static 定位、固定在「转换为位图/矢量」按钮右侧，不做浮动。 */
-.modeControls.onTop {
-    position: relative;
-    z-index: 31;
+.modeControls.dock {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    margin-left: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
 }
 .modeControls.dark {
     background: #303133;
